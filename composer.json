@@ -1,0 +1,20 @@
+{
+    "name": "polly/polly",
+    "description": "A PHP 8 framework for building applications",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.0"
+    },
+    "type": "libary",
+    "authors": [
+        {
+            "name": "Stefan Pols",
+            "email": "info@codens.nl"
+        }
+    ],
+    "autoload" : {
+        "psr-4" : {
+            "Polly\\" : "src/"
+        }
+    }
+}
