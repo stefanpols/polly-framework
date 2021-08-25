@@ -5,14 +5,17 @@ namespace Polly\ORM;
 
 class EntityCache
 {
-    private ?array $entities = null;
+    private array $entities = [];
 
     public function add($id, AbstractEntity &$object)
     {
         $this->getEntities()[$id] = $object;
     }
 
-    public function &getEntities()
+    /**
+     * @return AbstractEntity[]
+     */
+    public function &getEntities() : array
     {
         if(is_null($this->entities))
             $this->entities = [];
@@ -22,12 +25,17 @@ class EntityCache
 
     public function delete($id)
     {
-        unset($this->getEntities()[$id]);
+        if($this->exists($id))
+        {
+            $this->getEntities()[$id] = null;
+            unset($this->getEntities()[$id]);
+        }
     }
 
-    public function get(string $id) : ?AbstractEntity
+    public function &get(string $id) : ?AbstractEntity
     {
-         return $this->getEntities()[$id] ?? null;
+        $var = $this->getEntities()[$id] ?? null;
+        return $var;
     }
 
     public function exists(string $id) : bool

@@ -48,7 +48,26 @@ abstract class RepositoryService
     public static function save(AbstractEntity $entity) : bool
     {
         if(!static::validate($entity)) return false;
-        return static::getRepository()->save($entity);
+        if(static::getRepository()->save($entity))
+        {
+            EntityManager::handleEntityRelations(static::getRepository(), $entity);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param AbstractEntity $entity
+     * @return bool
+     */
+    public static function delete(AbstractEntity $entity) : bool
+    {
+        if(static::getRepository()->delete($entity))
+        {
+            static::getRepository()?->getCache()->delete($entity->getId());
+            return true;
+        }
+        return false;
     }
 
     public static function validate(AbstractEntity $entity) : bool
@@ -105,14 +124,6 @@ abstract class RepositoryService
 
     }
 
-    /**
-     * @param AbstractEntity $entity
-     * @return bool
-     */
-    public static function delete(AbstractEntity $entity) : bool
-    {
-        return static::getRepository()->delete($entity);
-    }
 
 
 }
