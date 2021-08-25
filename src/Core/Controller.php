@@ -11,4 +11,13 @@ abstract class Controller
         $this->response = $response;
     }
 
+    /**
+     * @return Response
+     */
+    public function getResponse(): Response
+    {
+        return $this->response;
+    }
+
+
 }

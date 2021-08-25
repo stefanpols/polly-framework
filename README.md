@@ -5,7 +5,7 @@ Polly framework is available on [Packagist](https://packagist.org/packages/polly
 "polly/polly": "^1.0.1"
 ```
 
-or run 
+or run
 
 ```sh
 composer require polly/polly

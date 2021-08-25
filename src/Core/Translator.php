@@ -40,7 +40,7 @@ class Translator
                 $localeFile = file_get_contents($localeFilePath);
                 $localeFileArray = json_decode($localeFile, true);
                 if($localeFileArray === null || $localeFileArray === false)
-                    throw Exception();
+                    throw new Exception();
 
                 self::$cachedFiles[$locale] = $localeFileArray;
             }

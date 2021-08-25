@@ -17,7 +17,7 @@ use ReflectionClass;
 class EntityManager
 {
     private static ?INamingStrategy $namingStrategy = null;
-    private static bool $cache = false;
+    private static bool $cache = true;
     private static array $repositories = [];
     private static string $defaultPrimaryKeyType;
 
@@ -25,13 +25,10 @@ class EntityManager
 
     public static function prepare()
     {
-        if(!Config::exists('orm'))
-            throw new MissingConfigKeyException('orm');
-
-        $ormConfig = Config::get('orm');
+        $ormConfig = Config::get('orm', []);
 
         static::$namingStrategy         = new ($ormConfig['naming_strategy'] ?? DefaultNamingStrategy::class)();
-        static::$cache                  = $ormConfig['cache'] ?? false;
+        static::$cache                  = $ormConfig['cache'] ?? true;
         static::$defaultPrimaryKeyType  = $ormConfig['default_pk_type'] ?? AbstractEntity::PK_UUID;
     }
 

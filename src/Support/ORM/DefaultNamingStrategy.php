@@ -1,6 +1,6 @@
 <?php
 
-namespace Polly\ORM;
+namespace Polly\Support\ORM;
 
 
 use Polly\Helpers\Str;
