@@ -40,7 +40,7 @@ class Shutdown
             //Check if error should be catched
             if(in_array($error['type'], static::$catchTypes) || in_array(E_ALL, static::$catchTypes))
             {
-                App::handleFatal($errorException);
+                App::handleException($errorException);
             }
         }
     }

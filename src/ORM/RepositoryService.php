@@ -92,19 +92,19 @@ abstract class RepositoryService
                         $errors[$property] = Translator::translate('not_empty_validation_error');
                     }
                 }
-                elseif($validator instanceof Email && !filter_var($value, FILTER_VALIDATE_EMAIL))
+                elseif($validator instanceof Email && !is_null($value) && !filter_var($value, FILTER_VALIDATE_EMAIL))
                 {
                     $errors[$property] = Translator::translate('email_validation_error');
                 }
-                elseif($validator instanceof Url && !filter_var($value, FILTER_VALIDATE_URL))
+                elseif($validator instanceof Url && !is_null($value) && !filter_var($value, FILTER_VALIDATE_URL))
                 {
                     $errors[$property] = Translator::translate('url_validation_error');
                 }
-                elseif($validator instanceof Ip && !filter_var($value, FILTER_VALIDATE_IP))
+                elseif($validator instanceof Ip && !is_null($value) && !filter_var($value, FILTER_VALIDATE_IP))
                 {
                     $errors[$property] = Translator::translate('ip_validation_error');
                 }
-                elseif($validator instanceof Domain && !filter_var($value, FILTER_VALIDATE_DOMAIN))
+                elseif($validator instanceof Domain && !is_null($value) && !filter_var($value, FILTER_VALIDATE_DOMAIN))
                 {
                     $errors[$property] = Translator::translate('domain_validation_error');
                 }
