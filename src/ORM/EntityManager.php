@@ -4,7 +4,6 @@ namespace Polly\ORM;
 
 
 use Polly\Core\Config;
-use Polly\Exceptions\MissingConfigKeyException;
 use Polly\ORM\Annotations\Entity;
 use Polly\ORM\Annotations\LazyMany;
 use Polly\ORM\Annotations\LazyOne;
@@ -12,6 +11,7 @@ use Polly\ORM\Exceptions\FailedRepositoryAllocationException;
 use Polly\ORM\Exceptions\UndefinedRepository;
 use Polly\ORM\Exceptions\UnknownRelationException;
 use Polly\ORM\Interfaces\INamingStrategy;
+use Polly\Support\ORM\DefaultNamingStrategy;
 use ReflectionClass;
 
 class EntityManager

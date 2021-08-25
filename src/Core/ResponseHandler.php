@@ -15,7 +15,7 @@ class ResponseHandler
         static::processHttpCode($response);
         static::processRedirect($response);
 
-        if(!Request::expectJson())
+        if(!Request::expectJson() && !$response->isJson())
             static::processHtmlOutput($response);
         else
             static::processJsonOutput($response);
@@ -34,7 +34,7 @@ class ResponseHandler
         if($response->getHttpCode())
         {
             http_response_code($response->getHttpCode());
-            if(Request::isAjax())
+            if(Request::expectJson() || $response->isJson() || Request::isAjax())
                 exit;
         }
     }
@@ -81,7 +81,9 @@ class ResponseHandler
         }
         catch(Exception) {}
 
-        ob_clean();
+        if(ob_get_length() > 0)
+            ob_clean();
+
         if(App::isDebug())
         {
             print_r($exception);

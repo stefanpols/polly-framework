@@ -82,8 +82,6 @@ class App
         EntityManager::prepare();
     }
 
-    public static function handleException(Exception $exception) : void  { ExceptionHandler::process($exception);  }
-
     public static function environment(string $key, ?string $fallback=null) : ?string
     {
         return $_ENV[$key] ?? $fallback;
@@ -110,6 +108,8 @@ class App
     {
         return date_default_timezone_get();
     }
+
+    public static function handleException(Exception $exception) : void  { ExceptionHandler::process($exception);  }
 
     public static function handleRequest() : void { RequestHandler::process(); }
 

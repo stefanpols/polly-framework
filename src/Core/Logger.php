@@ -40,7 +40,7 @@ class Logger
     {
         $log  = "[FILE]: ".$exception->getFile(). " (line:" . $exception->getLine() . ")"." ";
         $log .= "[EXCEPTION]: ".$exception::class." ";
-        $log .= "[URL]: ".$_SERVER['REQUEST_URI']." ";
+        $log .= "[URL]: ".($_SERVER['REQUEST_URI'] ?? "CLI")." ";
         if($exception->getMessage())
             $log .= "[MESSAGE]: ".$exception->getMessage()." ";
         $log .= "[TRACE]: ".str_replace("\n", ' ', $exception->getTraceAsString());

@@ -12,6 +12,7 @@ class Response
     private ?string $httpCode = null;
     private bool $addOrigin = false;
     private array $headers = [];
+    private bool $returnJson = false;
 
     public function view(string $viewPath) : void
     {
@@ -81,6 +82,16 @@ class Response
     public function setAddOrigin(bool $addOrigin): void
     {
         $this->addOrigin = $addOrigin;
+    }
+
+    public function isJson(): bool
+    {
+        return $this->returnJson;
+    }
+
+    public function json(): void
+    {
+        $this->returnJson = true;
     }
 
     public function __get(string $name): mixed
