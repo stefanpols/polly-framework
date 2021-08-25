@@ -21,7 +21,7 @@ function datetime_to_text($format, DateTime $dateTime) : string
     return utf8_encode(strftime($format, $dateTime->getTimestamp()));
 }
 
-function get_messages() : mixed
+function get_messages() : array
 {
     return Arr::objectsToArray(Session::getMessages());
 }

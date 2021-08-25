@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs;
+namespace Polly\Core;
 
 abstract class Cronjob
 {
@@ -37,6 +37,14 @@ abstract class Cronjob
     public function &getResults(): array
     {
         return $this->results;
+    }
+
+    /**
+     * @param string $result
+     */
+    public function addResult(string $result)
+    {
+        $this->results[] = $result;
     }
 
     /**

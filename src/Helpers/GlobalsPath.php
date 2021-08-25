@@ -21,6 +21,11 @@ function env($key, $fallback=null) : ?string
     return App::environment($key, $fallback);
 }
 
+function config($key, $fallback=null) : ?string
+{
+    return Config::get($key, $fallback);
+}
+
 function translate($key) : string
 {
     return Translator::translate($key);

@@ -4,6 +4,7 @@ namespace Polly\Helpers;
 
 class FileSystem
 {
+
     public static function createPath(string $filePath) : bool
     {
         if(is_file($filePath)) return true;
@@ -42,6 +43,27 @@ class FileSystem
             }
         }
         return false;
+    }
+
+    public static function getDirectoryContent($directoryPath, &$results = array())
+    {
+        $files = scandir($directoryPath);
+
+        foreach ($files as $key => $value)
+        {
+            $path = realpath($directoryPath . DIRECTORY_SEPARATOR . $value);
+            if (!is_dir($path))
+            {
+                $results[] = $path;
+            }
+            else if ($value != "." && $value != "..")
+            {
+                FileSystem::getDirectoryContent($path, $results);
+                $results[] = $path;
+            }
+        }
+
+        return $results;
     }
 
 }
