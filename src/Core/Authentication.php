@@ -2,7 +2,6 @@
 
 namespace Polly\Core;
 
-
 use Polly\Exceptions\EmptyAuthenticationHandlerException;
 use Polly\Interfaces\IAuthenticationAgent;
 use Polly\Interfaces\IAuthenticationModel;
