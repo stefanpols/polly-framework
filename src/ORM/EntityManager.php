@@ -159,9 +159,7 @@ class EntityManager
                     $entity->$propertySetter(new LazyLoader(function() use($foreignRepository, $queryBuilder) {
                         return EntityManager::executeQueryBuilder($foreignRepository, $queryBuilder);
                     }));
-
                 }
-
             }
             elseif ($relation instanceof LazyOne)
             {
@@ -184,7 +182,6 @@ class EntityManager
             {
                 throw new UnknownRelationException($relation::class);
             }
-
         }
     }
 
@@ -223,9 +220,6 @@ class EntityManager
         throw new FailedRepositoryAllocationException($entity);
     }
 
-    /**
-     * @return string
-     */
     public static function getDefaultPrimaryKeyType(): string
     {
         return self::$defaultPrimaryKeyType;

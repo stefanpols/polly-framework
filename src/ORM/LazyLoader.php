@@ -26,5 +26,11 @@ class LazyLoader
         return $this->results;
     }
 
+    public function clear()
+    {
+        $this->results = null;
+        $this->executed = false;
+    }
+
 
 }

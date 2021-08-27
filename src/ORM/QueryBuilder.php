@@ -121,6 +121,8 @@ class QueryBuilder
 
     public function makeQuery() : string
     {
+        $this->placeholders = [];
+
         if(!empty($this->customQuery))
             return $this->customQuery;
 
@@ -155,7 +157,6 @@ class QueryBuilder
 
         if(!is_null($this->offset))
             $query .= ' OFFSET '.$this->offset;
-
 
         return $query;
     }

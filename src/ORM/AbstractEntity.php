@@ -2,7 +2,11 @@
 
 namespace Polly\ORM;
 
+use Exception;
 use Polly\ORM\Annotations\Id;
+use Polly\ORM\Interfaces\IReferenceType;
+use ReflectionClass;
+use ReflectionObject;
 
 abstract class AbstractEntity
 {
@@ -58,5 +62,24 @@ abstract class AbstractEntity
     }
 
 
+    /**
+     * Reset the cached lazy loading objects
+     */
+    public function clearCache()
+    {
+        $reflection = new ReflectionObject($this);
+
+        foreach ($reflection->getProperties() as $property)
+        {
+            if($property->getType()->getName() == LazyLoader::class)
+            {
+                $property->setAccessible(true);
+                $property->getValue($this)->clear();
+
+            }
+        }
+
+        return $this;
+    }
 
 }
