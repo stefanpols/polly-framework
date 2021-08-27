@@ -19,9 +19,9 @@ class Response
         $this->viewPath = $viewPath;
     }
 
-    public function redirect(string $redirectUrl)
+    public function redirect(string $redirectUrl, bool $relativeUrl = true)
     {
-        $this->redirectUrl = $redirectUrl;
+        $this->redirectUrl = ($relativeUrl ? Router::getCurrentBaseUrl() : '').$redirectUrl;
     }
 
     public function getHttpCode() : ?string

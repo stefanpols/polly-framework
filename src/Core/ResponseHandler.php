@@ -43,9 +43,7 @@ class ResponseHandler
     {
         if($response->isRedirect())
         {
-            $baseUrl = Router::allocateGroup()->getBaseUrl();
-
-            $redirUrl = $baseUrl.$response->getRedirectUrl();
+            $redirUrl = $response->getRedirectUrl();
             if($response->addOrigin())
             {
                 $redirUrl .= '?origin='.urlencode(Request::getFullUrl());
