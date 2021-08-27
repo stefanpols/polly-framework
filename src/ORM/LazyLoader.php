@@ -21,7 +21,6 @@ class LazyLoader
         {
             $this->executed = true;
             $this->results = $this->closure->call($this);
-            $this->closure = null;
         }
         return $this->results;
     }
