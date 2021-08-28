@@ -98,9 +98,9 @@ class App
         $machineLocale  = $locales[$locale] ?? $locale;
 
         static::$locale = $locale;
-        if(!setlocale(LC_COLLATE|LC_CTYPE|LC_TIME, $machineLocale))
+        if(!setlocale(LC_TIME, $machineLocale))
         {
-            setlocale(LC_COLLATE|LC_CTYPE|LC_TIME, Locale::getDefault());
+            setlocale(LC_TIME, Locale::getDefault());
         }
     }
 

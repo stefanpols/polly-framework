@@ -387,6 +387,10 @@ class EntityBuilder
             {
                 $output .= ' datetime';
             }
+            else if($property->getType() == "int")
+            {
+                $output .= ' int';
+            }
             else if($property->getType() == "double")
             {
                 $output .= ' double';
@@ -435,7 +439,6 @@ class EntityBuilder
                 $output .= ";"."\n";
             }
         }
-        $output .= "COMMIT;"."\n";
 
         return $output;
 
