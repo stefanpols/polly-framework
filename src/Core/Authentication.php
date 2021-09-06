@@ -22,7 +22,7 @@ class Authentication
         return static::getHandler()->login($username, $password);
     }
 
-    private static function getHandler() : IAuthenticationAgent
+    public static function getHandler() : IAuthenticationAgent
     {
         if(!static::$authHandler) throw new EmptyAuthenticationHandlerException();
         return static::$authHandler;
@@ -41,5 +41,10 @@ class Authentication
     public static function user() : IAuthenticationModel
     {
         return static::getHandler()->user();
+    }
+
+    public static function unauthenticated()
+    {
+        static::getHandler()->unauthenticated();
     }
 }

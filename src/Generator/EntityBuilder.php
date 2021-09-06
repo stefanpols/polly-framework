@@ -47,7 +47,7 @@ class EntityBuilder
 
             return $reflection->getShortName();
         }
-        catch(Exception $e)
+        catch(Exception)
         {
             //Its oke, just not a class time since reflection failed.
         }
@@ -347,17 +347,18 @@ class EntityBuilder
 
     public function generateSQL()
     {
-        $output = "DROP TABLE IF EXISTS `".strtolower($this->getClassName())."`;". "\n\n";
-        $output .= "CREATE TABLE `".strtolower($this->getClassName())."` ("."\n";
+        $tableName = Str::toSnakeCase($this->getClassName());
+        $output = "DROP TABLE IF EXISTS `".$tableName."`;". "\n\n";
+        $output .= "CREATE TABLE `".$tableName."` ("."\n";
 
 
-        $output .= "\t"."`".strtolower($this->getClassName())."_id` varchar(36) NOT NULL,". "\n";
+        $output .= "\t"."`".Str::toSnakeCase($this->getClassName())."_id` varchar(36) NOT NULL,". "\n";
 
         $properties = $this->getProperties();
         $index=0;
 
         $variableProperties = [];
-        foreach($properties as $key => $property)
+        foreach($properties as $property)
         {
             foreach($property->getAnnotations() as $annotation)
             {
@@ -367,7 +368,7 @@ class EntityBuilder
         }
 
         $indexes = [];
-        foreach($variableProperties as $key => $property)
+        foreach($variableProperties as $property)
         {
             $annotations = [];
             foreach($property->getAnnotations() as $annotation)
@@ -394,6 +395,10 @@ class EntityBuilder
             else if($property->getType() == "double")
             {
                 $output .= ' double';
+            }
+            else if($property->getType() == "bool")
+            {
+                $output .= ' int(1)';
             }
             else if($property->getType() == "Json")
             {
@@ -425,8 +430,8 @@ class EntityBuilder
 
         $output .= "\n".") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-        $output .= "\n\n"."ALTER TABLE `".strtolower($this->getClassName())."`"."\n";
-        $output .= "\t"."ADD PRIMARY KEY (`".strtolower($this->getClassName())."_id`)".($indexes ? ',' : '')."\n";
+        $output .= "\n\n"."ALTER TABLE `".$tableName."`"."\n";
+        $output .= "\t"."ADD PRIMARY KEY (`".Str::toSnakeCase($this->getClassName())."_id`)".($indexes ? ',' : '')."\n";
         foreach($indexes as $key => $index)
         {
             $output .= "\t"."ADD KEY `".$index."` (`".$index."`)";

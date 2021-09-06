@@ -194,7 +194,7 @@ class EntityManager
 
             return static::$repositories[$entity];
         }
-        catch(UndefinedRepository $e)
+        catch(UndefinedRepository)
         {
            return static::allocateRepository($entity);
         }

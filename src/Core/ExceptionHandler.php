@@ -5,6 +5,7 @@ namespace Polly\Core;
 
 use Closure;
 use Exception;
+use Polly\Exceptions\InvalidRouteGroupException;
 use Polly\Exceptions\UnhandledException;
 use Polly\Exceptions\UnknownExceptionHandlerException;
 use Polly\Helpers\Str;
@@ -38,7 +39,13 @@ class ExceptionHandler
 
     private static function getExceptionHandlers() : array
     {
-        return Config::get('exception_handlers', []);
+        $routeGroupExceptions = [];
+        try {
+            $routeGroupExceptions = Router::allocateGroup()->getExceptionHandlers();
+        }
+        catch(InvalidRouteGroupException)
+        { }
+        return array_merge(Config::get('exception_handlers', []), $routeGroupExceptions);
     }
 
     private static function createResponseByHandler(Exception $exception, array $handler) : Response

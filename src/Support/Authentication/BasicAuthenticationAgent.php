@@ -4,6 +4,7 @@ namespace Polly\Support\Authentication;
 
 use Polly\Core\Request;
 use Polly\Core\Router;
+use Polly\Exceptions\AuthenticationException;
 use Polly\Exceptions\InternalServerErrorException;
 use Polly\Interfaces\IAuthenticationAgent;
 use Polly\Interfaces\IAuthenticationModel;
@@ -103,4 +104,8 @@ class BasicAuthenticationAgent implements IAuthenticationAgent
         );
     }
 
+    public function unauthenticated()
+    {
+        throw new AuthenticationException();
+    }
 }

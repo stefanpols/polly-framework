@@ -27,6 +27,14 @@ class PDODriver implements IDatabaseConnection
         $this->password = $databaseConfig['password'];
     }
 
+    public function disconnect(): bool
+    {
+        $this->pdo = null;
+        $this->connected = false;
+
+        return true;
+    }
+
     public function connect(): bool
     {
         $connectionString = 'mysql:host='.$this->server.';port='.$this->port.';dbname='.$this->database;

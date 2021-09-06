@@ -2,10 +2,7 @@
 
 namespace Polly\ORM;
 
-use Exception;
 use Polly\ORM\Annotations\Id;
-use Polly\ORM\Interfaces\IReferenceType;
-use ReflectionClass;
 use ReflectionObject;
 
 abstract class AbstractEntity

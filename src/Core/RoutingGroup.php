@@ -11,17 +11,19 @@ class RoutingGroup
     private string $baseUrl;
     private string $namespace;
     private array $public;
+    private array $exceptionHandlers;
     private ?IAuthenticationAgent $authentication;
     private ?IAuthorizationAgent $authorization;
 
     public static function createFromConfig(array $groupConfig) : RoutingGroup
     {
-        $routingGroup                   = new RoutingGroup();
-        $routingGroup->baseUrl          = $groupConfig['base_url'] ?? '*';
-        $routingGroup->namespace        = $groupConfig['namespace'] ?? '';
-        $routingGroup->public           = $groupConfig['public'] ?? [];
-        $routingGroup->authentication   = $groupConfig['authentication'] ?? null;
-        $routingGroup->authorization    = $groupConfig['authorization'] ?? null;
+        $routingGroup                       = new RoutingGroup();
+        $routingGroup->baseUrl              = $groupConfig['base_url'] ?? '*';
+        $routingGroup->namespace            = $groupConfig['namespace'] ?? '';
+        $routingGroup->public               = $groupConfig['public'] ?? [];
+        $routingGroup->authentication       = $groupConfig['authentication'] ?? null;
+        $routingGroup->authorization        = $groupConfig['authorization'] ?? null;
+        $routingGroup->exceptionHandlers    = $groupConfig['exception_handlers'] ?? [];
         return $routingGroup;
     }
 
@@ -65,6 +67,14 @@ class RoutingGroup
     public function getAuthorizationAgent() : ?IAuthorizationAgent
     {
         return $this->authorization;
+    }
+
+    /**
+     * @return array
+     */
+    public function getExceptionHandlers() : array
+    {
+        return $this->exceptionHandlers;
     }
 
 }

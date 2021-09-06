@@ -49,7 +49,7 @@ class FileSystem
     {
         $files = scandir($directoryPath);
 
-        foreach ($files as $key => $value)
+        foreach ($files as $value)
         {
             $path = realpath($directoryPath . DIRECTORY_SEPARATOR . $value);
             if (!is_dir($path))

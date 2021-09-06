@@ -5,8 +5,6 @@ namespace Polly\Core;
 use Exception;
 use Polly\Exceptions\MissingConfigKeyException;
 use Polly\Helpers\FileSystem;
-use function Exception;
-
 
 class Translator
 {

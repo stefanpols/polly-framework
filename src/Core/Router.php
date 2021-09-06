@@ -2,7 +2,6 @@
 
 namespace Polly\Core;
 
-use Polly\Exceptions\AuthenticationException;
 use Polly\Exceptions\AuthorizeException;
 use Polly\Exceptions\InvalidRouteException;
 use Polly\Exceptions\InvalidRouteGroupException;
@@ -112,7 +111,7 @@ class Router
 
         if(!static::controllerIsPublic($controller))
             if(!Authentication::check())
-                throw new AuthenticationException();
+                Authentication::unauthenticated();
 
         foreach((new ReflectionMethod($controllerInstance, $method))->getAttributes() as $attribute)
             if(($attributeInstance = $attribute->newInstance()) instanceof IAuthorizeMethod && !Authorization::hasAccess($attributeInstance))

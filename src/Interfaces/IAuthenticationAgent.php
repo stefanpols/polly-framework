@@ -14,4 +14,6 @@ interface IAuthenticationAgent
 
     public function login(string $username, string $password) : bool;
 
+    public function unauthenticated();
+
 }

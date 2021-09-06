@@ -3,6 +3,7 @@
 namespace Polly\Generator;
 
 use Polly\Helpers\FileSystem;
+use Polly\Helpers\Str;
 
 class Creator
 {
@@ -15,8 +16,8 @@ class Creator
         FileSystem::createPath($directories['view'].'/'.$entity.'/Index.php');
         $entityGenerator = new EntityBuilder($entity, $dbFields, $relations);
         $entityGenerator->copyTo($directories['model'].'/'.$entity.'.php');
-        FileSystem::createPath($templatePath.'/../generated/'.strtolower($entity).'.sql');
-        $entityGenerator->copySQL($templatePath.'/../generated/'.strtolower($entity).'.sql');
+        FileSystem::createPath($templatePath.'/../generated/'.Str::toSnakeCase($entity).'.sql');
+        $entityGenerator->copySQL($templatePath.'/../generated/'.Str::toSnakeCase($entity).'.sql');
 
         return [
             $directories['repository'].'/'.$entity.'Repository.php',

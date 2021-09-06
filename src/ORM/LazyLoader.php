@@ -31,5 +31,11 @@ class LazyLoader
         $this->executed = false;
     }
 
+    public function __debugInfo()
+    {
+        return ['resolved'=> $this->executed ? 'true' : 'false', 'results'=>$this->results];
+    }
+
+
 
 }

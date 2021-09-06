@@ -3,13 +3,14 @@
 namespace Polly\ORM\Types;
 
 use JsonException;
+use JsonSerializable;
 use Polly\ORM\Interfaces\IReferenceType;
 use stdClass;
 
-class Json implements IReferenceType
+class Json implements IReferenceType, JsonSerializable
 {
 
-    private string $data;
+    private ?string $data;
 
     /**
      * Json constructor.
@@ -39,6 +40,7 @@ class Json implements IReferenceType
      */
     public static function createFromDb(?string $dbValue)
     {
+
         if(is_null($dbValue)) return null;
         return new Json($dbValue);
     }
@@ -94,6 +96,8 @@ class Json implements IReferenceType
     }
 
 
-
-
+    public function jsonSerialize()
+    {
+        return $this->asArray();
+    }
 }

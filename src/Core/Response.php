@@ -69,6 +69,11 @@ class Response
         return $this->variables;
     }
 
+    public function setArray(array $data)
+    {
+        $this->variables = array_values($data);
+    }
+
     public function getViewPath() : ?string
     {
         return $this->viewPath ?? null;

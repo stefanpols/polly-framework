@@ -29,6 +29,12 @@ class Request
         return $_SESSION[$key] ?? null;
     }
 
+    public static function body()
+    {
+        return file_get_contents('php://input');
+    }
+
+
     public static function getUrl() : string
     {
         $protocol = (static::server('HTTPS') && static::server('HTTPS') != "off") ? "https" : "http";

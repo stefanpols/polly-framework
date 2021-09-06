@@ -10,11 +10,11 @@ class View
 {
     private function __construct() { }
 
-    public static function render(Response $response)
+    public static function render(Response $response) : string
     {
         if(!$response->getViewPath())
         {
-            return;
+            return "";
         }
         $viewOutput = static::include($response->getViewPath(), $response->getVariables());
         if(!$response->isViewOnly())

@@ -3,7 +3,9 @@
     "description": "A PHP 8 framework for building applications",
     "license": "MIT",
     "require": {
-        "php": ">=8.0"
+        "php": ">=8.0",
+        "ext-pdo": "*",
+        "ext-intl": "*"
     },
     "type": "libary",
     "authors": [

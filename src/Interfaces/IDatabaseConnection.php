@@ -6,6 +6,7 @@ interface IDatabaseConnection
 {
     public function __construct($databaseConfig);
     public function connect() : bool;
+    public function disconnect() : bool;
     public function close();
     public function fetchAll(string $query, array $parameters=[]) : array;
     public function fetchSingle(string $query, array $parameters=[]) : array|bool;
