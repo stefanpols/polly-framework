@@ -2,6 +2,7 @@
 
 namespace Polly\Core;
 
+use Exception;
 use Polly\Exceptions\AuthorizeException;
 use Polly\Exceptions\InvalidRouteException;
 use Polly\Exceptions\InvalidRouteGroupException;
@@ -98,16 +99,26 @@ class Router
         return lcfirst(Str::toCamelCase($actionName));
     }
 
+    private static function throwRouteException(string $routeError)
+    {
+        if(!Authentication::check())
+            Authentication::unauthenticated();
+        else
+            throw new InvalidRouteException($routeError);
+    }
+
     public static function call(string $controller, string $method, ?array $parameters) : Response
     {
         if(!class_exists($controller))
-            throw new InvalidRouteException("Call to undefined controller '".$controller."'");
+            static::throwRouteException("Call to undefined controller '".$controller."'");
 
         $response = new Response();
         $controllerInstance = new $controller($response);
 
         if(!static::canCall($controllerInstance, $method))
-            throw new InvalidRouteException("Call to undefined method '".$method."' on controller '".$controller."'");
+        {
+            static::throwRouteException("Call to undefined method '".$method."' on controller '".$controller."'");
+        }
 
         if(!static::controllerIsPublic($controller))
             if(!Authentication::check())
@@ -115,7 +126,7 @@ class Router
 
         foreach((new ReflectionMethod($controllerInstance, $method))->getAttributes() as $attribute)
             if(($attributeInstance = $attribute->newInstance()) instanceof IAuthorizeMethod && !Authorization::hasAccess($attributeInstance))
-                throw new AuthorizeException($controller. " > ".$method);
+                throw new AuthorizeException($controller. " > ".$method. " | ID = ".Authentication::user()->getId());
 
         $controllerInstance->$method(...$parameters);
 

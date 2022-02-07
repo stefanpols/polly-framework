@@ -61,7 +61,14 @@ class EntityManager
             if($results === false)
                 return null;
 
-            return static::toEntities($repository, $results);
+            if($queryBuilder->toEntities())
+            {
+                return static::toEntities($repository, $results);
+            }
+            else
+            {
+                return $results;
+            }
         }
         else
         {
@@ -79,7 +86,8 @@ class EntityManager
             $entities = [];
             foreach($data as $entityData)
             {
-                $entities[] = static::createEntity($repository, $entityData);
+                $entity = static::createEntity($repository, $entityData);
+                $entities[$entity->getId()] = $entity;
             }
             return $entities;
         }
@@ -140,7 +148,7 @@ class EntityManager
                 $foreignKey         = $foreignRepository->getColumnName($foreignProperty);
                 $overrideMethod     = "findBy".ucfirst($foreignProperty);
 
-                //Check if the there is a method in the repository to retrieve the data
+                //Check if there is a method in the repository to retrieve the data
                 if(is_callable(array($foreignRepository, $overrideMethod)))
                 {
                     $entity->$propertySetter(new LazyLoader(function() use($foreignRepository, $overrideMethod, $entity) {
@@ -168,15 +176,18 @@ class EntityManager
                 $foreignKey             = $foreignRepository->getColumnName($foreignProperty);
                 $getter                 = "get".ucfirst($referenceProperty);
 
-                $queryBuilder = (new QueryBuilder())
-                    ->table($foreignRepository->getTableName())
-                    ->select()
-                    ->single()
-                    ->where($foreignKey, $entity->$getter());
+                if($entity->$getter() !== null)
+                {
+                    $queryBuilder = (new QueryBuilder())
+                        ->table($foreignRepository->getTableName())
+                        ->select()
+                        ->single()
+                        ->where($foreignKey, $entity->$getter());
 
-                $entity->$propertySetter(new LazyLoader(function() use($foreignRepository, $queryBuilder) {
-                    return EntityManager::executeQueryBuilder($foreignRepository, $queryBuilder);
-                }));
+                    $entity->$propertySetter(new LazyLoader(function() use($foreignRepository, $queryBuilder) {
+                        return EntityManager::executeQueryBuilder($foreignRepository, $queryBuilder);
+                    }));
+                }
             }
             else
             {

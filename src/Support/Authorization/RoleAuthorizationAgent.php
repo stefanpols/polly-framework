@@ -40,7 +40,8 @@ class RoleAuthorizationAgent implements IAuthorizationAgent
     {
         $requiredRole = $authorize->requiredRole;
         $currentRole = $this->getUser()->getRole();
-        return array_search($currentRole, $this->getRoles()) <= array_search($requiredRole, $this->getRoles());
+
+        return array_search($currentRole, array_keys($this->getRoles())) <= array_search($requiredRole, array_keys($this->getRoles()));
     }
 
     public function getUser() : IRoleAuthorizationModel
@@ -56,16 +57,26 @@ class RoleAuthorizationAgent implements IAuthorizationAgent
     public function getRoles() : array
     {
         return [
-            RoleAuthorizationAgent::SUPER_USER,
-            RoleAuthorizationAgent::ADMINISTRATOR,
-            RoleAuthorizationAgent::DIRECTOR,
-            RoleAuthorizationAgent::MANAGER,
-            RoleAuthorizationAgent::EMPLOYEE,
-            RoleAuthorizationAgent::READ_ONLY,
-            RoleAuthorizationAgent::ANONYMOUS
+            RoleAuthorizationAgent::SUPER_USER => "Super user",
+            RoleAuthorizationAgent::ADMINISTRATOR  => "Administrator",
+          //  RoleAuthorizationAgent::DIRECTOR  => "Directie",
+            RoleAuthorizationAgent::MANAGER  => "Manager",
+            RoleAuthorizationAgent::EMPLOYEE  => "Medewerker",
+            RoleAuthorizationAgent::READ_ONLY => "Alleen-lezen",
+           // RoleAuthorizationAgent::ANONYMOUS  => "Anoniem"
         ];
     }
 
+    public function getAuthorizedRoles() : array
+    {
+        $roles = array_keys($this->getRoles());
+        $roleKeys = (array_slice($roles, array_search(Authentication::user()->getRole(), $roles)));
+        $authorizedRoles = [];
+        foreach($roleKeys as $role)
+            $authorizedRoles[$role] = $this->getRoles()[$role];
+
+        return $authorizedRoles;
+    }
 
 
 

@@ -20,12 +20,11 @@ class FileSystem
     {
         if(is_dir($directoryPath)) return true;
 
-        if(!is_dir($directoryPath))
+        if($createIfNotExists)
         {
             mkdir($directoryPath, 0777,true);
+            return is_dir($directoryPath);
         }
-
-        return is_dir($directoryPath);
     }
 
     public static function fileExists(?string $filePath, bool $createIfNotExists=false) : bool
@@ -45,25 +44,54 @@ class FileSystem
         return false;
     }
 
-    public static function getDirectoryContent($directoryPath, &$results = array())
+    public static function getDirectoryContent($directoryPath, $ignoreDirs=array(), $ignoreFiles=array(), &$results = array())
     {
         $files = scandir($directoryPath);
 
         foreach ($files as $value)
         {
-            $path = realpath($directoryPath . DIRECTORY_SEPARATOR . $value);
+            $path = realpath($directoryPath .'/'. $value);
+            $path = str_replace('\\','/', $path);
+
             if (!is_dir($path))
             {
+                foreach($ignoreFiles as $ignoreFile)
+                    if(str_ends_with($value, $ignoreFile))
+                        continue 2;
+
                 $results[] = $path;
             }
             else if ($value != "." && $value != "..")
             {
-                FileSystem::getDirectoryContent($path, $results);
+                foreach($ignoreDirs as $ignoreDir)
+                    if(str_ends_with($value, $ignoreDir))
+                        continue 2;
+
                 $results[] = $path;
+                FileSystem::getDirectoryContent($path, $ignoreDirs, $ignoreFiles, $results);
             }
         }
 
         return $results;
+    }
+
+    public static function removeDirectory($directoryPath)
+    {
+        if (is_dir($directoryPath))
+        {
+            $objects = scandir($directoryPath);
+            foreach ($objects as $object)
+            {
+                if ($object != "." && $object != "..")
+                {
+                    if (is_dir($directoryPath.'/'.$object) && !is_link($directoryPath."/".$object))
+                        static::removeDirectory($directoryPath.'/'.$object);
+                    else
+                        unlink($directoryPath.'/'.$object);
+                }
+            }
+            rmdir($directoryPath);
+        }
     }
 
 }

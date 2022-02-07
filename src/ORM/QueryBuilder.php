@@ -18,8 +18,9 @@ class QueryBuilder
     private ?array $whereConditions = null;
     private ?string $whereExpr = null;
     private ?array $valuesArray = null;
-    private ?array $placeholders = null;
+    private ?array $placeholders = [];
     private bool $singleSelect = false;
+    private bool $parseToEntities = true;
     private ?string $orderBy = null;
     private ?int $limit = null;
     private ?int $offset = null;
@@ -54,6 +55,12 @@ class QueryBuilder
     {
         $this->queryMode = QueryBuilder::SELECT;
         $this->selectColumns = $columns;
+        return $this;
+    }
+
+    public function custom($query) : self
+    {
+        $this->customQuery = $query;
         return $this;
     }
 
@@ -103,7 +110,10 @@ class QueryBuilder
 
     public function whereExpr($whereExpr) : self
     {
-        $this->whereExpr = $whereExpr;
+        if(!empty($this->whereExpr))
+            $this->whereExpr .= $whereExpr;
+        else
+            $this->whereExpr = $whereExpr;
         return $this;
     }
 
@@ -119,10 +129,14 @@ class QueryBuilder
         return $this;
     }
 
+    public function noEntities(): self
+    {
+        $this->parseToEntities = false;
+        return $this;
+    }
+
     public function makeQuery() : string
     {
-        $this->placeholders = [];
-
         if(!empty($this->customQuery))
             return $this->customQuery;
 
@@ -169,14 +183,21 @@ class QueryBuilder
 
             foreach($this->whereConditions as $key => $value)
             {
-                $query .= $key.' = :'.$key;
-                $this->addPlaceholder($key, $value);
+                if($value == null)
+                {
+                    $query .= $key.' IS NULL';
+                }
+                else
+                {
+                    $query .= $key.' = :'.$key;
+                    $this->addPlaceholder($key, $value);
+                }
                 if($key != array_key_last($this->whereConditions)) $query .= ' AND ';
             }
         }
-        elseif(!empty($this->whereExpr))
+        if(!empty($this->whereExpr))
         {
-            $query .= ' WHERE '.$this->whereExpr;
+            $query .= (empty($this->whereConditions) ? ' WHERE ' : " ").$this->whereExpr;
         }
     }
 
@@ -223,6 +244,7 @@ class QueryBuilder
         }
 
         $this->addWhere($query);
+
 
         return $query;
     }
@@ -329,6 +351,16 @@ class QueryBuilder
     {
         $this->singleSelect = $singleSelect;
     }
+
+    /**
+     * @return bool
+     */
+    public function toEntities(): bool
+    {
+        return $this->parseToEntities;
+    }
+
+
 
 
 

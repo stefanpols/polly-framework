@@ -6,7 +6,9 @@ use Exception;
 use Polly\Helpers\Str;
 use Polly\ORM\AbstractEntity;
 use Polly\ORM\Annotations\Entity;
+use Polly\ORM\Annotations\ForeignId;
 use Polly\ORM\Annotations\LazyOne;
+use Polly\ORM\Annotations\Variable;
 use Polly\ORM\LazyLoader;
 use ReflectionClass;
 
@@ -74,6 +76,9 @@ class EntityBuilder
 
             if(isset($info['annotations']))
             {
+                if(!in_array(ForeignId::class, $info['annotations']) && !in_array(Variable::class, $info['annotations']))
+                    $info['annotations'][] = Variable::class;
+
                 foreach($info['annotations'] as $annotation)
                 {
                     $this->addPropertyAnnotation($name, $annotation);
@@ -130,7 +135,7 @@ class EntityBuilder
         foreach($properties as $name => $info)
         {
 
-            $property = $this->addProperty($name, LazyLoader::class, Property::PRIVATE, false);
+            $property = $this->addProperty($name, LazyLoader::class, Property::PRIVATE, true);
             $parameters = [];
 
             $parameters[] = $info['entity']."::class";
@@ -146,13 +151,14 @@ class EntityBuilder
             if($info['type'] == LazyOne::class)
             {
                 $method->setReturnType('?'.$info['entity']);
+                $method->setBody("return \$this->".$property->getName().'?->getResults();');
             }
             else
             {
                 $method->setReturnType('array');
+                $method->setBody("return \$this->".$property->getName().'->getResults();');
             }
 
-            $method->setBody("return \$this->".$property->getName().'->getResults();');
             $this->methods[] = $method;
 
             $method = new Method();
@@ -395,6 +401,10 @@ class EntityBuilder
             else if($property->getType() == "double")
             {
                 $output .= ' double';
+            }
+            else if($property->getType() == "float")
+            {
+                $output .= ' float';
             }
             else if($property->getType() == "bool")
             {

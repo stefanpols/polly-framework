@@ -5,12 +5,14 @@ namespace Polly\ORM;
 use Exception;
 use Polly\Helpers\UUID;
 use Polly\Interfaces\IDatabaseConnection;
+use Polly\ORM\Annotations\AutoSortAsc;
 use Polly\ORM\Annotations\AutoSortDesc;
 use Polly\ORM\Annotations\Entity;
 use Polly\ORM\Annotations\ForeignId;
 use Polly\ORM\Annotations\Id;
 use Polly\ORM\Annotations\LazyMany;
 use Polly\ORM\Annotations\LazyOne;
+use Polly\ORM\Annotations\ReadOnly;
 use Polly\ORM\Annotations\Variable;
 use Polly\ORM\Exceptions\UndefinedColumnException;
 use Polly\ORM\Exceptions\UndefinedPropertyException;
@@ -34,6 +36,7 @@ abstract class EntityRepository
     private ?array $validators = null;
     private ?array $referenceTypeProperties = null;
     private ?array $dbMapping = null;
+    private ?array $readMapping = null;
     private ?EntityCache $cache = null;
     private string $primaryKey = 'id';
     private string $defaultOrderBy = '';
@@ -52,6 +55,7 @@ abstract class EntityRepository
     {
         $this->tableName = $namingStrategy->classToTableName($this->entityClassName);
         $this->dbMapping = [];
+        $this->readMapping = [];
 
         $reflection = new ReflectionClass($this->getEntity());
 
@@ -84,14 +88,25 @@ abstract class EntityRepository
                 $attribute = $attribute->newInstance();
 
                 //Reflect properties
-                if ($attribute instanceof Variable)
+                if ($attribute instanceof ReadOnly)
+                {
+                    $this->readMapping[$property->name] = $namingStrategy->propertyToColumnName($this->entityClassName, $property->name);
+                }
+                else if ($attribute instanceof Variable)
+                {
                     $this->dbMapping[$property->name] = $namingStrategy->propertyToColumnName($this->entityClassName, $property->name);
-
+                    $this->readMapping[$property->name] = $namingStrategy->propertyToColumnName($this->entityClassName, $property->name);
+                }
                 elseif ($attribute instanceof ForeignId)
+                {
                     $this->dbMapping[$property->name] = $namingStrategy->foreignKeyToColumnName($this->entityClassName, $property->name);
-
+                    $this->readMapping[$property->name] = $namingStrategy->foreignKeyToColumnName($this->entityClassName, $property->name);
+                }
                 elseif ($attribute instanceof Id)
+                {
                     $this->dbMapping[$property->name] = $namingStrategy->primaryKeyToColumnName($this->entityClassName, $property->name);
+                    $this->readMapping[$property->name] = $namingStrategy->primaryKeyToColumnName($this->entityClassName, $property->name);
+                }
 
                 //Reflect relations
                 elseif ($attribute instanceof LazyMany || $attribute instanceof LazyOne)
@@ -101,13 +116,14 @@ abstract class EntityRepository
                 elseif ($attribute instanceof AutoSortDesc)
                     $this->defaultOrderBy = $this->getColumnName($property->name) . ' DESC';
 
-                elseif ($attribute instanceof AutoSortDesc)
+                elseif ($attribute instanceof AutoSortAsc)
                     $this->defaultOrderBy = $this->getColumnName($property->name) . ' ASC';
 
                 //Reflect validation
                 elseif (in_array($attribute::class, [NotEmpty::class, Email::class, Ip::class, Domain::class, Url::class, Unique::class]))
                     $this->validators[$property->name][] = $attribute;
             }
+
         }
 
     }
@@ -130,15 +146,18 @@ abstract class EntityRepository
 
     public function getColumnName(string $propertyName) : string
     {
-        if(!isset($this->dbMapping[$propertyName]))
+        if(!isset($this->readMapping[$propertyName]))
+        {
             throw new UndefinedPropertyException($propertyName.' ('.$this->getEntity().')');
+        }
 
-        return $this->dbMapping[$propertyName];
+
+        return $this->readMapping[$propertyName];
     }
 
     public function getPropertyName(string $columnName) : string
     {
-        $columnKey = array_search($columnName, $this->getDbMapping());
+        $columnKey = array_search($columnName, $this->getReadMapping());
 
         if($columnKey === false)
             throw new UndefinedColumnException($columnName);
@@ -162,6 +181,23 @@ abstract class EntityRepository
         $this->dbMapping = $dbMapping;
     }
 
+    /**
+     * @return array|null
+     */
+    public function getReadMapping(): ?array
+    {
+        return $this->readMapping;
+    }
+
+    /**
+     * @param array|null $readMapping
+     */
+    public function setReadMapping(?array $readMapping): void
+    {
+        $this->readMapping = $readMapping;
+    }
+
+
     public function all() : array
     {
         $queryBuilder = (new QueryBuilder())
@@ -172,12 +208,39 @@ abstract class EntityRepository
         return $this->execute($queryBuilder);
     }
 
+    public function limited(int $limit, int $offset=0) : array
+    {
+        $queryBuilder = (new QueryBuilder())
+            ->table($this->getTableName())
+            ->select()
+            ->limit($limit, $offset)
+            ->orderBy($this->defaultOrderBy);
+
+        return $this->execute($queryBuilder);
+    }
+
+    public function count() : array
+    {
+        $queryBuilder = (new QueryBuilder())
+            ->table($this->getTableName())
+            ->select(["COUNT(*) as count"])
+            ->single()
+            ->noEntities();
+
+        return $this->execute($queryBuilder);
+    }
+
     /**
      * @return string|null
      */
     public function getTableName(): ?string
     {
         return $this->tableName;
+    }
+
+    public function setTableName(string $tableName) : void
+    {
+        $this->tableName = $tableName;
     }
 
     public function execute(QueryBuilder $queryBuilder) : mixed
@@ -212,10 +275,10 @@ abstract class EntityRepository
         $this->primaryKey = $primaryKey;
     }
 
-    public function delete(AbstractEntity $entity) : bool
+    public function delete(AbstractEntity $entity, ?string $table = null) : bool
     {
         $queryBuilder = (new QueryBuilder())
-            ->table($this->getTableName())
+            ->table($table ?? $this->getTableName())
             ->delete()
             ->where($this->getColumnName($this->getPrimaryKey()), $entity->getId());
 
@@ -244,29 +307,37 @@ abstract class EntityRepository
         return $this->execute($queryBuilder);
     }
 
-    public function save(AbstractEntity $entity) : bool
+    public function save(AbstractEntity $entity, ?string $table = null) : bool
     {
         if(is_null($entity->getId()))
-            return $this->insert($entity);
+            return $this->insert($entity, $table);
         else
-            return $this->update($entity);
+            return $this->update($entity, $table);
     }
 
-    public function insert(AbstractEntity $entity) : bool
+    public function insert(AbstractEntity $entity, ?string $table = null) : bool
     {
         $queryBuilder = (new QueryBuilder())
-            ->table($this->getTableName())
+            ->table($table ?? $this->getTableName())
             ->insert();
 
         $this->mapQueryBuilder($queryBuilder, $entity);
 
         if($this->getPrimaryKeyType() == AbstractEntity::PK_UUID)
         {
-            $entity->setId(UUID::v4());
+            if(empty($entity->getId()))
+                $entity->setId(UUID::v4());
             $queryBuilder->value($this->getColumnName($this->getPrimaryKey()), $entity->getId());
         }
 
-        return $this->execute($queryBuilder);
+        $succeeded = $this->execute($queryBuilder);
+
+        if($succeeded && $this->getPrimaryKeyType() == AbstractEntity::PK_AUTO_INCREMENT)
+        {
+            $entity->setId($this->getConnection()->lastInsertId());
+        }
+
+        return $succeeded;
     }
 
     public function mapQueryBuilder(&$queryBuilder, &$entity, bool $skipPrimary=false)
@@ -322,10 +393,10 @@ abstract class EntityRepository
         $this->primaryKeyType = $primaryKeyType;
     }
 
-    public function update(AbstractEntity $entity)
+    public function update(AbstractEntity $entity, ?string $table = null)
     {
         $queryBuilder = (new QueryBuilder())
-            ->table($this->getTableName())
+            ->table($table ?? $this->getTableName())
             ->update();
 
         $this->mapQueryBuilder($queryBuilder, $entity, true);

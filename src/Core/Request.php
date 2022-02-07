@@ -9,24 +9,19 @@ class Request
 {
     private function __construct() { }
 
-    public static function get(string $key) : mixed
+    public static function get(string $key, mixed $fallback=null) : mixed
     {
-        return $_GET[$key] ?? null;
+        return $_GET[$key] ?? $fallback;
     }
 
-    public static function post(string $key) : mixed
+    public static function post(string $key, mixed $fallback=null) : mixed
     {
-        return $_POST[$key] ?? null;
+        return $_POST[$key] ?? $fallback;
     }
 
-    public static function cookie(string $key) : mixed
+    public static function cookie(string $key, mixed $fallback=null) : mixed
     {
-        return $_COOKIE[$key] ?? null;
-    }
-
-    public static function session(string $key) : mixed
-    {
-        return $_SESSION[$key] ?? null;
+        return $_COOKIE[$key] ?? $fallback;
     }
 
     public static function body()

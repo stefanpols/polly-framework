@@ -15,8 +15,9 @@ class Arr
         return $array;
     }
 
-    public static function toArray(string $string, mixed $separators)
+    public static function toArray(?string $string, mixed $separators)
     {
+        if(empty($string)) return [];
         if(empty($separators)) return $string;
         if(!is_array($separators)) $separators = [$separators];
 

@@ -33,6 +33,7 @@ class App
 
     private static function loadBasePath(string $basePath) : void
     {
+        $basePath = str_replace('\\','/', $basePath);
         if(!FileSystem::directoryExists($basePath))
         {
             throw new InvalidBasePathException($basePath);
@@ -47,6 +48,16 @@ class App
     public static function getBasePath() : string
     {
         return static::$basePath;
+    }
+
+    public static function getStoragePath()
+    {
+        return Config::get("path.storage");
+    }
+
+    public static function getUrl()
+    {
+        return Router::getCurrentBaseUrl();
     }
 
     private static function loadEnvironment()
@@ -65,7 +76,12 @@ class App
 
     public static function isDebug() : bool
     {
-        return Config::get("debug", false);
+        return Config::get("debug", true);
+    }
+
+    public static function isProduction() : bool
+    {
+        return Config::get("production", true);
     }
 
     public static function setTimezone(string $timezone)
@@ -104,9 +120,9 @@ class App
         }
     }
 
-    public static function getTimezone() : string
+    public static function getTimezone() : \DateTimeZone
     {
-        return date_default_timezone_get();
+        return new \DateTimeZone(date_default_timezone_get());
     }
 
     public static function handleException(Exception $exception) : void  { ExceptionHandler::process($exception);  }

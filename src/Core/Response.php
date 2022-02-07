@@ -7,6 +7,7 @@ class Response
 {
     private array $variables = [];
     private ?string $viewPath = null;
+    private ?string $module = null;
     private bool $viewOnly = false;
     private ?string $redirectUrl = null;
     private ?string $httpCode = null;
@@ -17,6 +18,11 @@ class Response
     public function view(string $viewPath) : void
     {
         $this->viewPath = $viewPath;
+    }
+
+    public function module(string $module) : void
+    {
+        $this->module = $module;
     }
 
     public function redirect(string $redirectUrl, bool $relativeUrl = true)
@@ -74,9 +80,19 @@ class Response
         $this->variables = array_values($data);
     }
 
+    public function setObject(array $data)
+    {
+        $this->variables = $data;
+    }
+
+    public function getModule() : ?string
+    {
+        return $this->module;
+    }
+
     public function getViewPath() : ?string
     {
-        return $this->viewPath ?? null;
+        return $this->viewPath;
     }
 
     public function addOrigin(): bool
@@ -99,9 +115,9 @@ class Response
         $this->returnJson = true;
     }
 
-    public function __get(string $name): mixed
+    public function &__get(string $name): mixed
     {
-        return $this->variables[$name] ?? null;
+        return $this->variables[$name];
     }
 
     public function __set(string $name, mixed $value): void

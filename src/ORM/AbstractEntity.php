@@ -2,7 +2,9 @@
 
 namespace Polly\ORM;
 
+use Polly\ORM\Annotations\Entity;
 use Polly\ORM\Annotations\Id;
+use ReflectionClass;
 use ReflectionObject;
 
 abstract class AbstractEntity
@@ -37,6 +39,7 @@ abstract class AbstractEntity
             $setter = 'set'.ucfirst($key);
             if(is_callable(array($this, $setter)))
             {
+                $value = is_object($value) || strlen($value) > 0 ? $value : null;
                 $this->$setter($value);
             }
         }
@@ -48,6 +51,11 @@ abstract class AbstractEntity
     public function getErrors(): ?array
     {
         return $this->errors;
+    }
+
+    public function addError($key, $message) : void
+    {
+        $this->errors[$key] = $message;
     }
 
     /**
@@ -64,17 +72,27 @@ abstract class AbstractEntity
      */
     public function clearCache()
     {
-        $reflection = new ReflectionObject($this);
+
+        $reflection = new ReflectionClass($this);
+
 
         foreach ($reflection->getProperties() as $property)
         {
             if($property->getType()->getName() == LazyLoader::class)
             {
                 $property->setAccessible(true);
-                $property->getValue($this)->clear();
+                $property->setValue($this,null);
 
             }
         }
+
+        $entityAttribute = $reflection->getAttributes(Entity::class);
+        $entityAttribute = array_shift($entityAttribute);
+        $entityAttribute = $entityAttribute->newInstance();
+        $repositoryServiceClass = $entityAttribute->repositoryServiceClass;
+        $repositoryServiceClass::getRepository()->getCache()->delete($this->getId());
+
+        EntityManager::handleEntityRelations($repositoryServiceClass::getRepository(), $this);
 
         return $this;
     }

@@ -11,4 +11,5 @@ interface IDatabaseConnection
     public function fetchAll(string $query, array $parameters=[]) : array;
     public function fetchSingle(string $query, array $parameters=[]) : array|bool;
     public function execute(string $query, array $parameters=[]) : bool;
+    public function lastInsertId() : int;
 }

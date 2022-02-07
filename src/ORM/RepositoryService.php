@@ -2,6 +2,7 @@
 
 namespace Polly\ORM;
 
+use Polly\Core\Pagination;
 use Polly\Core\Translator;
 use Polly\ORM\Validation\Domain;
 use Polly\ORM\Validation\Email;
@@ -45,6 +46,25 @@ abstract class RepositoryService
      * @param AbstractEntity $entity
      * @return bool
      */
+    public static function insert(AbstractEntity $entity, bool $validate=true) : bool
+    {
+        if($validate && !static::validate($entity)) return false;
+        if(static::getRepository()->insert($entity))
+        {
+            EntityManager::handleEntityRelations(static::getRepository(), $entity);
+            return true;
+        }
+        else
+        {
+            echo "insert failed"."\r\n";
+        }
+        return false;
+    }
+
+    /**
+     * @param AbstractEntity $entity
+     * @return bool
+     */
     public static function save(AbstractEntity $entity) : bool
     {
         if(!static::validate($entity)) return false;
@@ -70,6 +90,15 @@ abstract class RepositoryService
         return false;
     }
 
+    public static function getPage(int $page, $results=100) : Pagination
+    {
+        $pagination = new Pagination();
+        $pagination->setCurrentPage($page);
+        $pagination->setResultsPerPage($results);
+        $pagination->setResults(static::getRepository()?->limited($pagination->getResultsPerPage(), $pagination->getOffset()));
+        return $pagination;
+    }
+
     public static function validate(AbstractEntity $entity) : bool
     {
         $errors = [];
@@ -92,29 +121,29 @@ abstract class RepositoryService
                         $errors[$property] = Translator::translate('not_empty_validation_error');
                     }
                 }
-                elseif($validator instanceof Email && !is_null($value) && !filter_var($value, FILTER_VALIDATE_EMAIL))
+                elseif($validator instanceof Email && !empty($value) && !filter_var($value, FILTER_VALIDATE_EMAIL))
                 {
                     $errors[$property] = Translator::translate('email_validation_error');
                 }
-                elseif($validator instanceof Url && !is_null($value) && !filter_var($value, FILTER_VALIDATE_URL))
+                elseif($validator instanceof Url && !empty($value) && !filter_var($value, FILTER_VALIDATE_URL))
                 {
                     $errors[$property] = Translator::translate('url_validation_error');
                 }
-                elseif($validator instanceof Ip && !is_null($value) && !filter_var($value, FILTER_VALIDATE_IP))
+                elseif($validator instanceof Ip && !empty($value) && !filter_var($value, FILTER_VALIDATE_IP))
                 {
                     $errors[$property] = Translator::translate('ip_validation_error');
                 }
-                elseif($validator instanceof Domain && !is_null($value) && !filter_var($value, FILTER_VALIDATE_DOMAIN))
+                elseif($validator instanceof Domain && !empty($value) && !filter_var($value, FILTER_VALIDATE_DOMAIN))
                 {
                     $errors[$property] = Translator::translate('domain_validation_error');
                 }
-                elseif($validator instanceof Unique && !is_null($value))
+                elseif($validator instanceof Unique && !empty($value))
                 {
                     $existingItems = static::getRepository()->allWhere($property, $value);
-                    if($existingItems && count($existingItems) > 0)
-                    {
-                        $errors[$property] = Translator::translate('unique_validation_error');
-                    }
+                    if($existingItems)
+                        foreach($existingItems as $existingItem)
+                            if($existingItem->getId() != $entity->getId())
+                                $errors[$property] = Translator::translate('unique_validation_error');
                 }
             }
         }

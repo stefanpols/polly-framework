@@ -4,5 +4,5 @@ namespace Polly\Support\Authorization;
 
 interface IRoleAuthorizationModel
 {
-    public function getRole() : string;
+    public function getRole() : ?string;
 }

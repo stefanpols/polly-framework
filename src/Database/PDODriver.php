@@ -47,7 +47,7 @@ class PDODriver implements IDatabaseConnection
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             # Disable emulation of prepared statements, use REAL prepared statements instead.
-            $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+            $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
             $this->connected = true;
 
@@ -68,6 +68,9 @@ class PDODriver implements IDatabaseConnection
 
     public function fetchAll(string $query, array $parameters=[], int $mode=PDO::FETCH_ASSOC) : array
     {
+        //echo "ALL: ".$query."\r\n";
+        //print_r($parameters);
+
         if($this->execute($query, $parameters, $statement))
         {
             return $statement->fetchAll($mode);
@@ -75,15 +78,29 @@ class PDODriver implements IDatabaseConnection
         return [];
     }
 
+    public function lastInsertId() : int
+    {
+        return $this->pdo->lastInsertId();
+    }
+
+
     public function execute(string $query, array $parameters=[], &$statement=null) : bool
     {
         $statement = $this->pdo->prepare($query);
+
+      // echo "QUERY: ".$query."\r\n";
         foreach($parameters as $param => &$var)
-            $statement->bindParam($param, $var);
+        {
+            //var_dump($var);
+            $statement->bindParam($param, $var, empty($var) && strlen($var) == 0 && !is_bool($var) ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        }
 
         try
         {
-            return $statement->execute();
+            //$start = microtime(true);
+            $data = $statement->execute();
+           // echo "Q-time: ". microtime(true) - $start."\r\n";
+            return $data;
         }
         catch(PDOException $e)
         {
@@ -97,6 +114,7 @@ class PDODriver implements IDatabaseConnection
 
     public function fetchSingle(string $query, array $parameters=[], int $mode=PDO::FETCH_ASSOC) : array|bool
     {
+        //echo "SINGLE: ".$query."\r\n";
         if($this->execute($query, $parameters, $statement))
         {
             return $statement->fetch($mode);
