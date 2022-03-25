@@ -63,4 +63,21 @@ class Str
         }
         return $randomString;
     }
+
+    public static function randomPassword()
+    {
+        $digits    = array_flip(range('0', '9'));
+        $lowercase = array_flip(range('a', 'z'));
+        $uppercase = array_flip(range('A', 'Z'));
+        $special   = array_flip(str_split('!@#$%^&*()_+=-}{[}]\|;:<>?/'));
+        $combined  = array_merge($digits, $lowercase, $uppercase);
+
+        $password  = str_shuffle(array_rand($digits) .
+            array_rand($lowercase) .
+            array_rand($uppercase) .
+            array_rand($special) .
+            implode(array_rand($combined, 8)));
+
+        return $password;
+    }
 }

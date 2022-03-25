@@ -20,7 +20,6 @@ function has_access(IAuthorizeMethod $method) : bool
     return Authorization::hasAccess($method);
 }
 
-
 function view(string $view, array $variables=[]) : string
 {
     return View::include($view, $variables);
