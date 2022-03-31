@@ -73,16 +73,17 @@ class Router
 
     public static function getUrlFragments() : array
     {
-        $cleanUrl = Str::delete(Request::getUrl(), static::allocateGroup()->getBaseUrl());
+        $currentRouteGroup =  static::allocateGroup();
+        $cleanUrl = Str::delete(Request::getUrl(),$currentRouteGroup->getBaseUrl());
         $urlFragments = explode('/', $cleanUrl);
 
         if(empty($urlFragments) || empty($urlFragments[0]))
         {
-            $urlFragments[0] = static::$defaultController;
+            $urlFragments[0] = $currentRouteGroup->getDefaultController() ?: "index";
         }
         if(count($urlFragments) == 1 || strlen(trim($urlFragments[1])) == 0)
         {
-            $urlFragments[1] = static::$defaultMethod;
+            $urlFragments[1] = $currentRouteGroup->getDefaultMethod() ?: "index";
         }
 
         return $urlFragments;
@@ -101,7 +102,7 @@ class Router
 
     private static function throwRouteException(string $routeError)
     {
-        if(!Authentication::check())
+        if(!static::controllerIsPublic("*") && !Authentication::check())
             Authentication::unauthenticated();
         else
             throw new InvalidRouteException($routeError);
@@ -149,9 +150,6 @@ class Router
             throw new MissingConfigKeyException("routing");
 
         $routingConfig = Config::get('routing');
-
-        static::$defaultController  = $routingConfig["default_controller"] ?? "index";
-        static::$defaultMethod      = $routingConfig["default_method"] ?? "index";
 
         if(empty($routingConfig) || !isset($routingConfig['groups']) || empty($routingConfig['groups']))
             throw new MissingConfigKeyException("routing -> groups");

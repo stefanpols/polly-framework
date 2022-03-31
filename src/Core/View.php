@@ -47,7 +47,7 @@ class View
 
         if(!$response->isViewOnly())
         {
-            $viewOutput = static::include(static::getBase(), ['content'=>$viewOutput, 'cssPaths'=>static::getCssPaths(), 'jsPaths'=>static::getJsPaths()]);
+            $viewOutput = static::include(static::getBase(), $response->getVariables() + ['content'=>$viewOutput, 'cssPaths'=>static::getCssPaths(), 'jsPaths'=>static::getJsPaths()]);
         }
 
         return $viewOutput;
@@ -96,14 +96,6 @@ class View
         return $content;
     }
 
-    public static function getPath()
-    {
-        if(!Config::exists('path.views'))
-            throw new MissingConfigKeyException('path.views');
-
-        return Config::get('path.views');
-    }
-
     public static function sanitize($buffer) {
 
         $search = array(
@@ -123,6 +115,15 @@ class View
         $buffer = preg_replace($search, $replace, $buffer);
 
         return $buffer;
+    }
+
+    public static function getPath()
+    {
+        if(!Config::exists('path.views'))
+            throw new MissingConfigKeyException('path.views');
+
+        $currentRoutingGroup = Router::allocateGroup()->getViewDir();
+        return Config::get('path.views').$currentRoutingGroup;
     }
 
     public static function getBase()
