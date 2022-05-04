@@ -54,10 +54,7 @@ abstract class RepositoryService
             EntityManager::handleEntityRelations(static::getRepository(), $entity);
             return true;
         }
-        else
-        {
-            echo "insert failed"."\r\n";
-        }
+
         return false;
     }
 

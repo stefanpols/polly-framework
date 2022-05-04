@@ -3,6 +3,7 @@
 namespace Polly\Core;
 
 use ArrayObject;
+use Polly\Exceptions\InvalidRouteGroupException;
 use Polly\Exceptions\MissingConfigKeyException;
 use Polly\Exceptions\ViewNotFoundException;
 use Polly\Helpers\FileSystem;
@@ -122,8 +123,14 @@ class View
         if(!Config::exists('path.views'))
             throw new MissingConfigKeyException('path.views');
 
-        $currentRoutingGroup = Router::allocateGroup()->getViewDir();
-        return Config::get('path.views').$currentRoutingGroup;
+        try {
+            $currentRoutingGroup = Router::allocateGroup()->getViewDir();
+            return Config::get('path.views').$currentRoutingGroup;
+        }
+        catch(InvalidRouteGroupException $e)
+        {
+            return Config::get('path.views');
+        }
     }
 
     public static function getBase()
