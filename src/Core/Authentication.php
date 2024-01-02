@@ -2,12 +2,14 @@
 
 namespace Polly\Core;
 
+use App\Models\User;
 use Polly\Exceptions\EmptyAuthenticationHandlerException;
 use Polly\Interfaces\IAuthenticationAgent;
 use Polly\Interfaces\IAuthenticationModel;
 
 class Authentication
 {
+    private static ?User $user = null;
     private static ?IAuthenticationAgent $authHandler = null;
 
     private function __construct() { }
@@ -38,9 +40,26 @@ class Authentication
         return static::getHandler()->check();
     }
 
-    public static function user() : IAuthenticationModel
+    public static function user() : ?User
     {
-        return static::getHandler()->user();
+        try {
+            return static::getHandler()->user();
+
+        } catch(EmptyAuthenticationHandlerException $e)
+        {
+            return self::$user;
+        }
+    }
+
+    public static function setUser(?User $user) : void
+    {
+        try {
+            static::getHandler()->setUser($user);
+
+        } catch(EmptyAuthenticationHandlerException $e)
+        {
+          self::$user = $user;
+        }
     }
 
     public static function unauthenticated()

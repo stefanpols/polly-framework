@@ -2,6 +2,7 @@
 
 namespace Polly\ORM;
 
+use Polly\Interfaces\IDatabaseConnection;
 use Polly\ORM\Exceptions\DuplicatePlaceholderException;
 
 class QueryBuilder
@@ -21,9 +22,12 @@ class QueryBuilder
     private ?array $placeholders = [];
     private bool $singleSelect = false;
     private bool $parseToEntities = true;
+    private bool $parseRelations = true;
     private ?string $orderBy = null;
     private ?int $limit = null;
     private ?int $offset = null;
+    private ?string $entity = null;
+    private ?IDatabaseConnection $dbConnection = null;
 
     public static function createQuery(string $query) : self
     {
@@ -45,6 +49,19 @@ class QueryBuilder
 
         return $queryBuilder;
     }
+
+
+    public function entityInfo(string $entity)
+    {
+        $this->entity = $entity;
+        return $this;
+    }
+
+    public function getEntity() : string
+    {
+        return $this->entity;
+    }
+
 
     public function isSelect()
     {
@@ -135,6 +152,18 @@ class QueryBuilder
         return $this;
     }
 
+    public function noRelations(): self
+    {
+        $this->parseRelations = false;
+        return $this;
+    }
+
+    public function dbConnection(IDatabaseConnection $dbConnection): self
+    {
+        $this->dbConnection = $dbConnection;
+        return $this;
+    }
+
     public function makeQuery() : string
     {
         if(!empty($this->customQuery))
@@ -183,7 +212,7 @@ class QueryBuilder
 
             foreach($this->whereConditions as $key => $value)
             {
-                if($value == null)
+                if($value === null)
                 {
                     $query .= $key.' IS NULL';
                 }
@@ -360,6 +389,21 @@ class QueryBuilder
         return $this->parseToEntities;
     }
 
+    /**
+     * @return bool
+     */
+    public function toRelations(): bool
+    {
+        return $this->parseRelations;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getDbConnection(): ?IDatabaseConnection
+    {
+        return $this->dbConnection;
+    }
 
 
 

@@ -2,6 +2,7 @@
 
 namespace Polly\Support\Authentication;
 
+use App\Models\LoginAttempt;
 use Polly\Core\Request;
 use Polly\Core\Router;
 use Polly\Exceptions\AuthenticationException;
@@ -9,6 +10,7 @@ use Polly\Exceptions\InternalServerErrorException;
 use Polly\Interfaces\IAuthenticationAgent;
 use Polly\Interfaces\IAuthenticationModel;
 use Polly\Interfaces\IAuthenticationService;
+use Polly\ORM\Types\DateTime;
 
 class BasicAuthenticationAgent implements IAuthenticationAgent
 {
@@ -51,6 +53,11 @@ class BasicAuthenticationAgent implements IAuthenticationAgent
         return $this->user;
     }
 
+    public function setUser(?IAuthenticationModel $user): void
+    {
+        $this->user = $user;
+    }
+
     private function fetchUser() : void
     {
         $token = Request::cookie(self::COOKIE_TOKEN_NAME);
@@ -79,7 +86,9 @@ class BasicAuthenticationAgent implements IAuthenticationAgent
     {
         $user = $this->userService::verify($username, $password);
         if (!$user)
+        {
             return false;
+        }
 
         $token = $this->userService::createSession($user);
 
@@ -97,7 +106,7 @@ class BasicAuthenticationAgent implements IAuthenticationAgent
     {
         return setcookie(
             self::COOKIE_TOKEN_NAME,
-            null,
+            "",
             -1,
             Router::getCurrentBasePath(),
             ""
@@ -108,4 +117,5 @@ class BasicAuthenticationAgent implements IAuthenticationAgent
     {
         throw new AuthenticationException();
     }
+
 }

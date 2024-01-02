@@ -62,7 +62,7 @@ class Response
 
     public function isRedirect() : bool
     {
-        return !is_null($this->redirectUrl) && !empty($this->redirectUrl);
+        return !empty($this->redirectUrl);
     }
 
     public function getRedirectUrl() : string

@@ -50,14 +50,14 @@ class App
         return static::$basePath;
     }
 
-    public static function getStoragePath()
+    public static function getStoragePath($folder=null)
     {
-        return Config::get("path.storage");
+        return Config::get("path.storage").($folder ? "/".$folder.'/' : "");
     }
 
-    public static function getUrl()
+    public static function getUrl($destination="")
     {
-        return Router::getCurrentBaseUrl();
+        return Router::getCurrentBaseUrl().($destination ? "/".$destination : "");
     }
 
     private static function loadEnvironment()

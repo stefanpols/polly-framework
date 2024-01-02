@@ -28,7 +28,7 @@ class Router
     public static function allocateGroup() : RoutingGroup
     {
         foreach(static::getGroups() as &$group)
-            if(Str::contains(Request::getUrl(), $group->getBaseUrl())) return $group;
+            if(Str::contains(str_replace("http://","",str_replace("https://","",Request::getUrl())), str_replace("http://","",str_replace("https://","",$group->getBaseUrl())))) return $group;
 
         throw new InvalidRouteGroupException(Request::getUrl());
     }
@@ -74,7 +74,11 @@ class Router
     public static function getUrlFragments() : array
     {
         $currentRouteGroup =  static::allocateGroup();
-        $cleanUrl = Str::delete(Request::getUrl(),$currentRouteGroup->getBaseUrl());
+        $url = str_replace("http://", "https://", Request::getUrl());
+        $baseUrl = str_replace("http://", "https://", $currentRouteGroup->getBaseUrl());
+
+        $cleanUrl = Str::delete($url,$baseUrl);
+
         $urlFragments = explode('/', $cleanUrl);
 
         if(empty($urlFragments) || empty($urlFragments[0]))

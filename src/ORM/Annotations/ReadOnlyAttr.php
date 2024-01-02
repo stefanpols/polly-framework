@@ -1,9 +1,10 @@
 <?php
 
+
 namespace Polly\ORM\Annotations;
 
 
 use Attribute;
 
 #[Attribute]
-class ReadOnly {}
+class ReadOnlyAttr {}

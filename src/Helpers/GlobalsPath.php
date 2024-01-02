@@ -13,7 +13,7 @@ function storage_path($path = '') : string
 
 function site_url($path = '') : string
 {
-    return Router::getCurrentBaseUrl().($path);
+    return Config::get("site_url").($path);
 }
 
 function env($key, $fallback=null) : ?string
