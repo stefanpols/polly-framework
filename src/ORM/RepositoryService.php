@@ -4,7 +4,6 @@ namespace Polly\ORM;
 
 use Polly\Core\Pagination;
 use Polly\Core\Translator;
-use Polly\Helpers\UUID;
 use Polly\ORM\Validation\Domain;
 use Polly\ORM\Validation\Email;
 use Polly\ORM\Validation\Ip;
@@ -33,16 +32,6 @@ abstract class RepositoryService
         return static::getRepository()->find($id);
     }
 
-    /**
-     * @param string $id
-     * @return AbstractEntity|null
-     */
-    public static function findByUuid(string $id) : ?AbstractEntity
-    {
-        return static::getRepository()->findByUuid($id);
-    }
-
-
     abstract public static function getRepository(): EntityRepository;
 
     /**
@@ -57,22 +46,6 @@ abstract class RepositoryService
      * @param AbstractEntity $entity
      * @return bool
      */
-    public static function tmpInsert(AbstractEntity $entity, bool $validate=true) : bool
-    {
-        if($validate && !static::validate($entity)) return false;
-        if(static::getRepository()->insertWithId($entity))
-        {
-            //EntityManager::handleEntityRelations(static::getRepository(), $entity);
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param AbstractEntity $entity
-     * @return bool
-     */
     public static function insert(AbstractEntity $entity, bool $validate=true) : bool
     {
         if($validate && !static::validate($entity)) return false;
@@ -81,7 +54,10 @@ abstract class RepositoryService
             EntityManager::handleEntityRelations(static::getRepository(), $entity);
             return true;
         }
-
+        else
+        {
+            echo "insert failed"."\r\n";
+        }
         return false;
     }
 
@@ -91,16 +67,12 @@ abstract class RepositoryService
      */
     public static function save(AbstractEntity $entity) : bool
     {
-        if(is_callable(array($entity, "setUuid")) && empty($entity->getUuid()))
-            $entity->setUuid(UUID::v4());
-
         if(!static::validate($entity)) return false;
         if(static::getRepository()->save($entity))
         {
             EntityManager::handleEntityRelations(static::getRepository(), $entity);
             return true;
         }
-
         return false;
     }
 

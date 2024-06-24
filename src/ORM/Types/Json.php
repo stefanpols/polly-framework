@@ -16,11 +16,11 @@ class Json implements IReferenceType, JsonSerializable
      * Json constructor.
      * @param string|null $data
      */
-    public function __construct(?string $data = null)
+    public function __construct(string $data = null)
     {
         if(!$this->isJson($data))
         {
-            $this->data = null;
+            throw new JsonException();
         }
         $this->data = $data;
     }
@@ -58,9 +58,9 @@ class Json implements IReferenceType, JsonSerializable
      * @param array $array
      * @return Json
      */
-    public static function createFromObject(?array $array): Json
+    public static function createFromObject(array $array): Json
     {
-        return new Json($array!==null ? json_encode($array) : null);
+        return new Json(json_encode($array));
     }
 
     /**
@@ -68,10 +68,7 @@ class Json implements IReferenceType, JsonSerializable
      */
     public function asObjects(): ?stdClass
     {
-        $json = json_decode($this->data);
-        if(is_array($json))
-            return null;
-        return $json;
+        return json_decode($this->data);
     }
 
     /**
@@ -99,7 +96,7 @@ class Json implements IReferenceType, JsonSerializable
     }
 
 
-    public function jsonSerialize() : mixed
+    public function jsonSerialize()  : mixed
     {
         return $this->asArray();
     }

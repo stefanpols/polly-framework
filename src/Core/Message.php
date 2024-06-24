@@ -15,26 +15,6 @@ class Message implements JsonSerializable
     private string $title;
     private string $description;
 
-    public static function setErrorMessage(string $title, string $message)
-    {
-        Session::addMessage(new Message(Message::DANGER, $title, $message));
-    }
-
-    public static function setSuccessMessage(string $title, string $message)
-    {
-        Session::addMessage(new Message(Message::SUCCESS, $title, $message));
-    }
-
-    public static function setInfoMessage(string $title, string $message)
-    {
-        Session::addMessage(new Message(Message::INFO, $title, $message));
-    }
-
-    public static function setWarningMessage(string $title, string $message)
-    {
-        Session::addMessage(new Message(Message::WARNING, $title, $message));
-    }
-
     public function __construct(string $type, string $title, string $description)
     {
         if( $type != Message::SUCCESS &&

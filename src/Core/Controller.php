@@ -4,9 +4,9 @@ namespace Polly\Core;
 
 abstract class Controller
 {
-    protected Response $response;
+    protected ?Response $response = null;
 
-    public function __construct(Response &$response)
+    public function __construct(?Response &$response = null)
     {
         $this->response = $response;
     }

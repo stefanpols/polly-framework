@@ -7,8 +7,12 @@ use Polly\Exceptions\AuthorizeException;
 use Polly\Exceptions\InvalidRouteException;
 use Polly\Exceptions\InvalidRouteGroupException;
 use Polly\Exceptions\MissingConfigKeyException;
+use Polly\Helpers\Arr;
 use Polly\Helpers\Str;
 use Polly\Interfaces\IAuthorizeMethod;
+use Polly\ORM\Annotations\ReadOnly;
+use Polly\ORM\LazyLoader;
+use Polly\Support\Locale\Localized;
 use ReflectionMethod;
 
 
@@ -28,7 +32,7 @@ class Router
     public static function allocateGroup() : RoutingGroup
     {
         foreach(static::getGroups() as &$group)
-            if(Str::contains(str_replace("http://","",str_replace("https://","",Request::getUrl())), str_replace("http://","",str_replace("https://","",$group->getBaseUrl())))) return $group;
+            if(Str::contains(Request::getUrl(), $group->getBaseUrl())) return $group;
 
         throw new InvalidRouteGroupException(Request::getUrl());
     }
@@ -58,7 +62,7 @@ class Router
     {
         $urlFragments   = Router::getUrlFragments();
         $controller     = Router::getController($urlFragments[0]);
-        $method         = Router::getAction($urlFragments[1]);
+        $method         = Router::getAction($urlFragments[1], $controller);
         $parameters     = array_slice($urlFragments, 2);
 
         if(static::allocateGroup()->getAuthenticationHandler())
@@ -67,6 +71,7 @@ class Router
         if(static::allocateGroup()->getAuthorizationAgent())
             Authorization::setHandler(static::allocateGroup()->getAuthorizationAgent());
 
+
         $response = static::call($controller, $method, $parameters);
         return $response;
     }
@@ -74,12 +79,16 @@ class Router
     public static function getUrlFragments() : array
     {
         $currentRouteGroup =  static::allocateGroup();
-        $url = str_replace("http://", "https://", Request::getUrl());
-        $baseUrl = str_replace("http://", "https://", $currentRouteGroup->getBaseUrl());
-
-        $cleanUrl = Str::delete($url,$baseUrl);
-
+        $cleanUrl = Str::delete(Request::getUrl(),$currentRouteGroup->getBaseUrl());
         $urlFragments = explode('/', $cleanUrl);
+
+        $locales        = Arr::shiftKeys(Arr::toArray(App::environment('LOCALES', ''), ['|', '=']));
+
+        if(!empty($urlFragments) && array_key_exists($urlFragments[0], $locales))
+        {
+            $locale = array_shift($urlFragments);
+            App::setLocale($locale);
+        }
 
         if(empty($urlFragments) || empty($urlFragments[0]))
         {
@@ -95,12 +104,72 @@ class Router
 
     public static function getController($controllerName)
     {
+        $controllerDir = App::getBasePath().'/'.str_replace(["\\", "App"], ["/", 'app'],static::allocateGroup()->getNamespace());
+        $allControllers = scandir($controllerDir);
+
+        $translationKey = Translator::findKey($controllerName);
+
+        if($translationKey)
+        {
+            foreach($allControllers as $controllerFileName)
+            {
+                $methodTranslations = [];
+                if($controllerFileName == "." || $controllerFileName == "..")
+                    continue;
+                if(str_contains($controllerFileName, "Base"))
+                    continue;
+
+                $controllerClassName = str_replace(".php", "", $controllerFileName);
+
+                $name = static::allocateGroup()->getNamespace().'\\'.$controllerClassName;
+                $array = [];
+
+                $reflectionClass = new \ReflectionClass($name);
+
+                foreach ($reflectionClass->getAttributes() as $attribute)
+                {
+                    $attribute = $attribute->newInstance();
+
+                    //Reflect properties
+                    if ($attribute instanceof Localized)
+                    {
+                        if($translationKey == $attribute->translationKey)
+                        {
+                            $controllerName = $controllerClassName;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+
         $controllerName = Str::toCamelCase($controllerName);
         return static::allocateGroup()->getNamespace().'\\'.$controllerName;
     }
 
-    public static function getAction($actionName)
+    public static function getAction($actionName,$controllerName)
     {
+
+        $translationKey = Translator::findKey($actionName);
+        if($translationKey)
+        {
+            $methodTranslations = [];
+            $reflectionClass = new \ReflectionClass($controllerName);
+            $methods = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
+            foreach ($methods as $method) {
+                $attributes = $method->getAttributes(Localized::class);
+                if($attributes)
+                {
+                    $methodTranslations[$attributes[0]->newInstance()->translationKey] = $method->getName();
+                }
+            }
+            if(array_key_exists($translationKey, $methodTranslations))
+            {
+                return lcfirst(Str::toCamelCase($methodTranslations[$translationKey]));
+            }
+        }
+
+
         return lcfirst(Str::toCamelCase($actionName));
     }
 
@@ -150,6 +219,7 @@ class Router
 
     public static function prepare() : void
     {
+        
         if(!Config::exists("routing"))
             throw new MissingConfigKeyException("routing");
 

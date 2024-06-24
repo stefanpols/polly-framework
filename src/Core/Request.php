@@ -33,7 +33,7 @@ class Request
     public static function getUrl() : string
     {
         $protocol = (static::server('HTTPS') && static::server('HTTPS') != "off") ? "https" : "http";
-        return $protocol.'://'.static::server('SERVER_NAME').strtok(static::server('REQUEST_URI'), '?');
+        return $protocol.'://'.static::server('SERVER_NAME').strtok((static::server('REQUEST_URI') ?? ""), '?');
     }
 
     public static function server(string $key) : mixed

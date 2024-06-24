@@ -10,7 +10,7 @@ use Polly\Core\View;
 use Polly\Helpers\Arr;
 use Polly\Interfaces\IAuthorizeMethod;
 
-function user() : ?User
+function user() : User
 {
     return Authentication::user();
 }
@@ -32,17 +32,12 @@ function module(string $view, array $variables=[]) : string
 
 function asset($path = '') : string
 {
-    return site_url().$path.'?v='.Config::get('version', 1);
+    return $path.'?v='.Config::get('version', 1);
 }
 
 function datetime_to_text($format, DateTime $dateTime) : string
 {
-    $dateFormatted  = IntlDateFormatter::formatObject(
-        $dateTime,
-        $format,
-        'nl'
-    );
-    return ucwords($dateFormatted);
+    return strftime($format, $dateTime->getTimestamp());
 }
 
 function get_messages() : array

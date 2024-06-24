@@ -44,12 +44,16 @@ class Str
 
     public static function toSnakeCase(string $string)
     {
+        $string = str_replace(" ", "_", $string);
         return strtolower(preg_replace("/([a-z])([A-Z])/", "$1_$2", $string));
     }
 
     public static function toKebabCase(string $string)
     {
-        return strtolower(preg_replace("/([a-z])([A-Z])/", "$1-$2", $string));
+        $string = str_replace(" ", "-", $string);
+        $string = strtolower(preg_replace("/([a-z])([A-Z])/", "$1-$2", $string));
+        $string = rtrim($string, "-");
+        return $string;
     }
 
     public static function random($length = 10)

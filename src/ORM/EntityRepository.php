@@ -12,6 +12,7 @@ use Polly\ORM\Annotations\ForeignId;
 use Polly\ORM\Annotations\Id;
 use Polly\ORM\Annotations\LazyMany;
 use Polly\ORM\Annotations\LazyOne;
+use Polly\ORM\Annotations\ReadOnly;
 use Polly\ORM\Annotations\ReadOnlyAttr;
 use Polly\ORM\Annotations\Variable;
 use Polly\ORM\Exceptions\UndefinedColumnException;
@@ -136,11 +137,6 @@ abstract class EntityRepository
         return $this->entity;
     }
 
-    public function createEntity() : ?AbstractEntity
-    {
-        return new ($this->getEntity())();
-    }
-
     /**
      * @param string|null $entity
      */
@@ -160,12 +156,12 @@ abstract class EntityRepository
         return $this->readMapping[$propertyName];
     }
 
-    public function getPropertyName(string $columnName) : string
+    public function getPropertyName(string $columnName) : string|null
     {
         $columnKey = array_search($columnName, $this->getReadMapping());
 
         if($columnKey === false)
-            throw new UndefinedColumnException($columnName);
+            return null;
 
         return $columnKey;
     }
@@ -189,7 +185,7 @@ abstract class EntityRepository
     /**
      * @return array|null
      */
-    public function &getReadMapping(): ?array
+    public function getReadMapping(): ?array
     {
         return $this->readMapping;
     }
@@ -253,11 +249,6 @@ abstract class EntityRepository
         return EntityManager::executeQueryBuilder($this, $queryBuilder);
     }
 
-  //  public function executeTest(QueryBuilder $queryBuilder) : mixed
-  //  {
-  //      return EntityManager::executeQueryBuilderTest($this, $queryBuilder);
-  //  }
-
     public function find(string $id) : ?AbstractEntity
     {
         $queryBuilder = (new QueryBuilder())
@@ -265,17 +256,6 @@ abstract class EntityRepository
             ->select()
             ->single()
             ->where($this->getColumnName($this->getPrimaryKey()), $id);
-
-        return $this->execute($queryBuilder);
-    }
-
-    public function findByUuid(string $id) : ?AbstractEntity
-    {
-        $queryBuilder = (new QueryBuilder())
-            ->table($this->getTableName())
-            ->select()
-            ->single()
-            ->where($this->getColumnName('uuid'), $id);
 
         return $this->execute($queryBuilder);
     }
@@ -357,21 +337,6 @@ abstract class EntityRepository
         {
             $entity->setId($this->getConnection()->lastInsertId());
         }
-
-        return $succeeded;
-    }
-
-    public function insertWithId(AbstractEntity $entity, ?string $table = null) : bool
-    {
-        $queryBuilder = (new QueryBuilder())
-            ->table($table ?? $this->getTableName())
-            ->insert();
-
-        $this->mapQueryBuilder($queryBuilder, $entity);
-
-        $queryBuilder->value($this->getColumnName($this->getPrimaryKey()), $entity->getId());
-
-        $succeeded = $this->execute($queryBuilder);
 
         return $succeeded;
     }

@@ -14,6 +14,7 @@ class RoleAuthorizationAgent implements IAuthorizationAgent
     const DIRECTOR = "DIRECTOR";
     const MANAGER = "MANAGER";
     const EMPLOYEE = "EMPLOYEE";
+    const EXTERN = "EXTERN";
     const READ_ONLY = "READ_ONLY";
     const ANONYMOUS = "ANONYMOUS";
 
@@ -40,7 +41,7 @@ class RoleAuthorizationAgent implements IAuthorizationAgent
     {
         $requiredRole = $authorize->requiredRole;
         $currentRole = $this->getUser()->getRole();
-
+    
         return array_search($currentRole, array_keys($this->getRoles())) <= array_search($requiredRole, array_keys($this->getRoles()));
     }
 
@@ -61,8 +62,8 @@ class RoleAuthorizationAgent implements IAuthorizationAgent
             RoleAuthorizationAgent::ADMINISTRATOR  => "Administrator",
           //  RoleAuthorizationAgent::DIRECTOR  => "Directie",
             RoleAuthorizationAgent::MANAGER  => "Manager",
-            RoleAuthorizationAgent::EMPLOYEE  => "Medewerker",
-            RoleAuthorizationAgent::READ_ONLY => "Alleen-lezen",
+          //  RoleAuthorizationAgent::EXTERN  => "Extern",
+          //  RoleAuthorizationAgent::READ_ONLY => "Alleen-lezen",
            // RoleAuthorizationAgent::ANONYMOUS  => "Anoniem"
         ];
     }

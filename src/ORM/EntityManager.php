@@ -3,15 +3,12 @@
 namespace Polly\ORM;
 
 
-use App\Models\Revision;
 use Polly\Core\Config;
 use Polly\ORM\Annotations\Entity;
 use Polly\ORM\Annotations\LazyMany;
 use Polly\ORM\Annotations\LazyOne;
 use Polly\ORM\Exceptions\FailedRepositoryAllocationException;
-use Polly\ORM\Exceptions\MethodNotCallableException;
 use Polly\ORM\Exceptions\UndefinedRepository;
-use Polly\ORM\Exceptions\UndefinedService;
 use Polly\ORM\Exceptions\UnknownRelationException;
 use Polly\ORM\Interfaces\INamingStrategy;
 use Polly\Support\ORM\DefaultNamingStrategy;
@@ -22,7 +19,6 @@ class EntityManager
     private static ?INamingStrategy $namingStrategy = null;
     private static bool $cache = true;
     private static array $repositories = [];
-    private static array $services = [];
     private static string $defaultPrimaryKeyType;
 
     private function __construct() { }
@@ -47,12 +43,6 @@ class EntityManager
         static::$repositories[$repository->getEntity()] = $repository;
     }
 
-
-    public static function addService(RepositoryService $service)
-    {
-        static::$services[$service->getRepository()->getEntity()] = $service;
-    }
-
     public static function executeQueryBuilder(EntityRepository $repository, QueryBuilder $queryBuilder) : mixed
     {
         if ($queryBuilder->isSelect())
@@ -67,23 +57,13 @@ class EntityManager
 
             $fetchMethod = ($queryBuilder->isSingleSelect()) ? 'fetchSingle' : 'fetchAll';
 
-            $query = $queryBuilder->makeQuery();
-            if($queryBuilder->getDbConnection())
-            {
-                $results = $queryBuilder->getDbConnection()->$fetchMethod($query, $queryBuilder->getPlaceholders());
-            }
-            else
-            {
-                $results = $repository->getConnection()->$fetchMethod($query, $queryBuilder->getPlaceholders());
-            }
-
-
+            $results = $repository->getConnection()->$fetchMethod($queryBuilder->makeQuery(), $queryBuilder->getPlaceholders());
             if($results === false)
                 return null;
 
             if($queryBuilder->toEntities())
             {
-                return static::toEntities($repository, $results, $queryBuilder->toRelations());
+                return static::toEntities($repository, $results);
             }
             else
             {
@@ -97,7 +77,7 @@ class EntityManager
 
     }
 
-    public static function toEntities(EntityRepository $repository, array $data, bool $parseRelations=true)
+    public static function toEntities(EntityRepository $repository, array $data)
     {
         if(empty($data)) return [];
 
@@ -106,17 +86,16 @@ class EntityManager
             $entities = [];
             foreach($data as $entityData)
             {
-                $entity = static::createEntity($repository, $entityData, $parseRelations);
+                $entity = static::createEntity($repository, $entityData);
                 $entities[$entity->getId()] = $entity;
             }
-
             return $entities;
         }
 
-        return static::createEntity($repository, $data, $parseRelations);
+        return static::createEntity($repository, $data);
     }
 
-    public static function createEntity(EntityRepository $repository, array $entityData, bool $parseRelations=true)
+    public static function createEntity(EntityRepository $repository, array $entityData)
     {
         $idField = $repository->getColumnName($repository->getPrimaryKey());
         $id = $entityData[$idField];
@@ -126,15 +105,14 @@ class EntityManager
             return $repository->getCache()->get($id);
         }
 
-        $entity = $repository->createEntity();
-
+        $entity = new ($repository->getEntity())();
         foreach($entityData as $column => $value)
         {
             $property = $repository->getPropertyName($column);
+            if(!$property) continue;
             $setter = "set".ucfirst($property);
 
             $referenceType = $repository->getReferenceTypeProperties()[$property] ?? null;
-
             if($referenceType)
             {
                 $entity->$setter($referenceType::createFromDb($value));
@@ -151,11 +129,7 @@ class EntityManager
             $repository->getCache()->add($entity->getId(), $entity);
         }
 
-        if($parseRelations)
-        {
-            static::handleEntityRelations($repository, $entity);
-        }
-
+        static::handleEntityRelations($repository, $entity);
 
         return $entity;
     }
@@ -166,26 +140,35 @@ class EntityManager
         {
             $foreignEntity        = $relation->foreignEntity;
             $foreignRepository    = static::getRepository($foreignEntity);
+            $queryBuilder         = null;
             $propertySetter       = "set".ucfirst($property);
 
             if ($relation instanceof LazyMany)
             {
-                $prefix = "";
-                if(!empty($relation->prefix))
-                    $prefix = ucfirst($relation->prefix);
+                $foreignProperty    = $relation->foreignProperty ?? lcfirst($repository->getEntityClassName()).ucfirst($repository->getPrimaryKey());
+                $foreignKey         = $foreignRepository->getColumnName($foreignProperty);
+                $overrideMethod     = "findBy".ucfirst($foreignProperty);
 
-                $foreignProperty            = !empty($relation->foreignProperty) ? $relation->foreignProperty : lcfirst($repository->getEntityClassName()).ucfirst($repository->getPrimaryKey());
-                $foreignKey = $foreignRepository->getColumnName($foreignProperty);
-                $entity->$propertySetter(LazyLoader::prepared([
-                    'type'=> 'LazyMany',
-                    'entity'=> $foreignEntity,
-                    'fp'=>$foreignProperty,
-                    'source'=>$repository->getEntityClassName(),
-                    'fk'=>$foreignKey,
-                    'e'=>$entity,
-                    'v'=>$entity->getId(),
-                    'prefix'=> $prefix
-                ]));
+                //Check if there is a method in the repository to retrieve the data
+                if(is_callable(array($foreignRepository, $overrideMethod)))
+                {
+                    $entity->$propertySetter(new LazyLoader(function() use($foreignRepository, $overrideMethod, $entity) {
+                        return $foreignRepository->$overrideMethod($entity->getId());
+                    }));
+                }
+                //Else create the default QueryBuilder
+                else
+                {
+                    $queryBuilder = (new QueryBuilder())
+                        ->table($foreignRepository->getTableName())
+                        ->select()
+                        ->orderBy($foreignRepository->getDefaultOrderBy())
+                        ->where($foreignKey, $entity->getId());
+
+                    $entity->$propertySetter(new LazyLoader(function() use($foreignRepository, $queryBuilder) {
+                        return EntityManager::executeQueryBuilder($foreignRepository, $queryBuilder);
+                    }));
+                }
             }
             elseif ($relation instanceof LazyOne)
             {
@@ -196,12 +179,15 @@ class EntityManager
 
                 if($entity->$getter() !== null)
                 {
-                    $entity->$propertySetter(LazyLoader::prepared([
-                        'type'=> 'LazyOne',
-                        'entity'=> $foreignEntity,
-                        'fk'=>$foreignKey,
-                        'v'=>$entity->$getter()
-                    ]));
+                    $queryBuilder = (new QueryBuilder())
+                        ->table($foreignRepository->getTableName())
+                        ->select()
+                        ->single()
+                        ->where($foreignKey, $entity->$getter());
+
+                    $entity->$propertySetter(new LazyLoader(function() use($foreignRepository, $queryBuilder) {
+                        return EntityManager::executeQueryBuilder($foreignRepository, $queryBuilder);
+                    }));
                 }
             }
             else
@@ -211,7 +197,7 @@ class EntityManager
         }
     }
 
-    public static function &getRepository(string $entity) : EntityRepository
+    public static function getRepository(string $entity) : EntityRepository
     {
         try
         {
@@ -222,26 +208,11 @@ class EntityManager
         }
         catch(UndefinedRepository)
         {
-            return static::allocateRepository($entity);
+           return static::allocateRepository($entity);
         }
     }
 
-    public static function getService(string $entity) : RepositoryService
-    {
-        try
-        {
-            if(!isset(static::$services[$entity]))
-                throw new UndefinedService($entity);
-
-            return static::$services[$entity];
-        }
-        catch(UndefinedService)
-        {
-            return static::allocateService($entity);
-        }
-    }
-
-    public static function &allocateRepository(string $entity) : EntityRepository
+    public static function allocateRepository(string $entity) : EntityRepository
     {
         $reflection = new ReflectionClass($entity);
         $entityAttribute = $reflection->getAttributes(Entity::class);
@@ -254,29 +225,11 @@ class EntityManager
 
             if($repositoryServiceClass::getInstance() instanceof RepositoryService)
             {
-                $repository = $repositoryServiceClass::createRepository();
-                return $repository;
+                return $repositoryServiceClass::createRepository();
             }
         }
 
         throw new FailedRepositoryAllocationException($entity);
-    }
-
-    public static function allocateService(string $entity) : RepositoryService
-    {
-        $reflection = new ReflectionClass($entity);
-        $entityAttribute = $reflection->getAttributes(Entity::class);
-
-        if (!empty($entityAttribute))
-        {
-            $entityAttribute = array_shift($entityAttribute);
-            $entityAttribute = $entityAttribute->newInstance();
-            $repositoryServiceClass = $entityAttribute->repositoryServiceClass;
-
-            self::addService($repositoryServiceClass::getInstance());
-
-            return $repositoryServiceClass::getInstance();
-        }
     }
 
     public static function getDefaultPrimaryKeyType(): string
@@ -285,117 +238,5 @@ class EntityManager
     }
 
 
-
-
-    /*
-    public static function executeQueryBuilderTest(EntityRepository $repository, QueryBuilder $queryBuilder) : mixed
-    {
-        if ($queryBuilder->isSelect())
-        {
-            if($repository->getCache() && $queryBuilder->isSingleSelect() && count($queryBuilder->getWhereConditions()) == 1)
-            {
-                $idColumn = $repository->getColumnName($repository->getPrimaryKey());
-                $queryId = $queryBuilder->getWhereConditions()[$idColumn] ?? null;
-                if($queryId && $repository->getCache()?->exists($queryId))
-                    return $repository->getCache()->get($queryId);
-            }
-
-            $fetchMethod = ($queryBuilder->isSingleSelect()) ? 'fetchSingle' : 'fetchAll';
-
-            $query = $queryBuilder->makeQuery();
-            if($queryBuilder->getDbConnection())
-            {
-                $results = $queryBuilder->getDbConnection()->$fetchMethod($query, $queryBuilder->getPlaceholders());
-            }
-            else
-            {
-                $results = $repository->getConnection()->$fetchMethod($query, $queryBuilder->getPlaceholders());
-            }
-
-
-            if($results === false)
-                return null;
-
-            if($queryBuilder->toEntities())
-            {
-                return static::toEntitiesTest($repository, $results, $queryBuilder->toRelations());
-            }
-            else
-            {
-                return $results;
-            }
-        }
-        else
-        {
-            return $repository->getConnection()->execute($queryBuilder->makeQuery(), $queryBuilder->getPlaceholders());
-        }
-
-    }
-
-
-    public static function toEntitiesTest(EntityRepository $repository, array $data, bool $parseRelations=true)
-    {
-        if(empty($data)) return [];
-
-        if(isset($data[0]))
-        {
-            $entities = [];
-            foreach($data as $entityData)
-            {
-                $entity = static::createEntityTest($repository, $entityData, $parseRelations);
-                $entities[$entity->getId()] = $entity;
-            }
-
-            return $entities;
-        }
-
-        return static::createEntityTest($repository, $data, $parseRelations);
-    }
-
-
-    public static function createEntityTest(EntityRepository $repository, array $entityData, bool $parseRelations=true)
-    {
-        $idField = $repository->getColumnName($repository->getPrimaryKey());
-        $id = $entityData[$idField];
-
-        if($repository->getCache()?->exists($id))
-        {
-            return $repository->getCache()->get($id);
-        }
-
-        $entity = $repository->createEntity();
-
-        foreach($entityData as $column => $value)
-        {
-            $property = $repository->getPropertyName($column);
-            $setter = "set".ucfirst($property);
-
-            $referenceType = $repository->getReferenceTypeProperties()[$property] ?? null;
-
-            if($referenceType)
-            {
-                $entity->$setter($referenceType::createFromDb($value));
-            }
-            else
-            {
-                //Its a primitive type
-                $entity->$setter($value);
-            }
-        }
-
-        if($repository->getCache())
-        {
-            $repository->getCache()->add($entity->getId(), $entity);
-        }
-
-        if($parseRelations)
-        {
-            static::handleEntityRelations($repository, $entity);
-        }
-
-
-        return $entity;
-    }
-    */
 
 }

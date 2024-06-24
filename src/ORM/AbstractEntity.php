@@ -39,7 +39,7 @@ abstract class AbstractEntity
             $setter = 'set'.ucfirst($key);
             if(is_callable(array($this, $setter)))
             {
-                $value = is_object($value) || is_array($value) || strlen($value) > 0 ? $value : null;
+                $value = is_object($value) || strlen($value) > 0 ? $value : null;
                 $this->$setter($value);
             }
         }

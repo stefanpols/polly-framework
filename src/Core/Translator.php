@@ -12,14 +12,37 @@ class Translator
 
     private function __construct() { }
 
-    public static function translate(string $key)
+    public static function translate(string $key, string $locale = null)
     {
-        $locale = App::getLocale();
+        $locale = $locale ?? App::getLocale();
 
         if(!array_key_exists($locale, static::$cachedFiles))
             static::addLocaleFile($locale);
 
         return static::searchKey($key,static::$cachedFiles[$locale]);
+    }
+
+
+    public static function all(string $locale = null)
+    {
+        $locale = $locale ?? App::getLocale();
+
+        if(!array_key_exists($locale, static::$cachedFiles))
+            static::addLocaleFile($locale);
+
+        return static::$cachedFiles[$locale];
+    }
+
+
+
+    public static function findKey(string $value, string $locale = null)
+    {
+        $locale = $locale ?? App::getLocale();
+
+        if(!array_key_exists($locale, static::$cachedFiles))
+            static::addLocaleFile($locale);
+
+        return static::searchValue($value,static::$cachedFiles[$locale]);
     }
 
     private static function addLocaleFile(string $locale)
@@ -49,8 +72,14 @@ class Translator
         }
     }
 
+
     private static function searchKey(string $key, array $translations)
     {
         return $translations[$key] ?? $key;
+    }
+
+    private static function searchValue(string $value, array $translations)
+    {
+        return array_search($value, $translations) ?? null;
     }
 }

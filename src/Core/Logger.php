@@ -4,6 +4,7 @@ namespace Polly\Core;
 
 use DateTime;
 use Exception;
+use Polly\Exceptions\InvalidRouteException;
 use Polly\Helpers\FileSystem;
 
 
@@ -17,6 +18,7 @@ class Logger
 
     private static function writeLog(string $type, string $log) : void
     {
+        if(empty($log)) return;
         $log =  trim(preg_replace('/\s+/', ' ', $log));
 
         if(static::$logFilePath)
@@ -38,6 +40,12 @@ class Logger
 
     public static function createFromException(Exception $exception) : string
     {
+        if($exception instanceof InvalidRouteException)
+            return "";
+        if($exception instanceof InvalidRouteGroupException)
+            return "";
+        if($exception instanceof AuthenticationException)
+            return "";
         $log  = "[FILE]: ".$exception->getFile(). " (line:" . $exception->getLine() . ")"." ";
         $log .= "[EXCEPTION]: ".$exception::class." ";
         $log .= "[URL]: ".($_SERVER['REQUEST_URI'] ?? "CLI")." ";

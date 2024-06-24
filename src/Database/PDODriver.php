@@ -68,6 +68,9 @@ class PDODriver implements IDatabaseConnection
 
     public function fetchAll(string $query, array $parameters=[], int $mode=PDO::FETCH_ASSOC) : array
     {
+        //echo "ALL: ".$query."\r\n";
+        //print_r($parameters);
+
         if($this->execute($query, $parameters, $statement))
         {
             return $statement->fetchAll($mode);
@@ -83,22 +86,23 @@ class PDODriver implements IDatabaseConnection
 
     public function execute(string $query, array $parameters=[], &$statement=null) : bool
     {
+       // echo $query;
+       // print_r($parameters);
+       // echo "QUERY: ".$query."\r\n";
         $statement = $this->pdo->prepare($query);
+
         foreach($parameters as $param => &$var)
         {
-            if(is_bool($var))
-                $statement->bindParam($param, $var, PDO::PARAM_BOOL);
-            else
-                $statement->bindParam($param, $var, empty($var) && strlen($var??"") == 0 && !is_bool($var) ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            //var_dump($var);
+            $statement->bindParam($param, $var, empty($var) && strlen($var??"") == 0 && !is_bool($var) ? PDO::PARAM_NULL : PDO::PARAM_STR);
         }
 
         try
         {
-           // $start = microtime(true);
-            //echo "QUERY:".$query."\r\n";
-            $objects = $statement->execute();
-            //echo microtime(true) - $start."\r\n";
-            return $objects;
+            //$start = microtime(true);
+            $data = $statement->execute();
+           // echo "Q-time: ". microtime(true) - $start."\r\n";
+            return $data;
         }
         catch(PDOException $e)
         {
@@ -112,6 +116,7 @@ class PDODriver implements IDatabaseConnection
 
     public function fetchSingle(string $query, array $parameters=[], int $mode=PDO::FETCH_ASSOC) : array|bool
     {
+        //echo "SINGLE: ".$query."\r\n";
         if($this->execute($query, $parameters, $statement))
         {
             return $statement->fetch($mode);

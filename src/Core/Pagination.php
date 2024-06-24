@@ -44,11 +44,10 @@ class Pagination
         return count($this->getResults());
     }
 
-    public function &getPageResults()
+    public function getPageResults()
     {
         if(!$this->isEnabled()) return $this->getResults();
-        $array_slice = array_slice($this->getResults(), $this->getOffset(), $this->getResultsPerPage());
-        return $array_slice;
+        return array_slice($this->getResults(), $this->getOffset(), $this->getResultsPerPage());
     }
     public function getTotalPages()
     {

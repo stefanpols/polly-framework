@@ -139,15 +139,8 @@ class EntityBuilder
             $parameters = [];
 
             $parameters[] = $info['entity']."::class";
-            if(array_key_exists('property', $info)) $parameters[] = $info['property'] == null ? 'null' : "'".$info['property']."'";
-
-            if(isset($info['prefix']))
-            {
-                if(!array_key_exists('property', $info))
-                    $parameters[] = 'null';
-                $parameters[] = empty($info['prefix']) ? "'".$name."'" : "'".$info['prefix']."'";
-            }
-
+            if(array_key_exists('foreign_property', $info)) $parameters[] = "'".$info['foreign_property']."'";
+            if(array_key_exists('reference_property', $info)) $parameters[] = "'".$info['reference_property']."'";
 
             $this->addPropertyAnnotation($name, $info['type'],$parameters);
 
@@ -173,7 +166,6 @@ class EntityBuilder
             $method->setVisibility(Method::PUBLIC);
             $method->getParameters()[] = new Parameter($property);
             $method->setBody("\$this->".$property->getName()." = $".$property->getName().';');
-
             $this->methods[] = $method;
 
         }

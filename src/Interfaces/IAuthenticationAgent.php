@@ -8,8 +8,6 @@ interface IAuthenticationAgent
 
     public function check() : bool;
 
-    public function setUser(?IAuthenticationModel $user) : void;
-
     public function user() : ?IAuthenticationModel;
 
     public function logout() : bool;

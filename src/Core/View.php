@@ -3,7 +3,7 @@
 namespace Polly\Core;
 
 use ArrayObject;
-use Polly\Exceptions\InvalidRouteGroupException;
+use Dompdf\Exception;
 use Polly\Exceptions\MissingConfigKeyException;
 use Polly\Exceptions\ViewNotFoundException;
 use Polly\Helpers\FileSystem;
@@ -127,10 +127,11 @@ class View
             $currentRoutingGroup = Router::allocateGroup()->getViewDir();
             return Config::get('path.views').$currentRoutingGroup;
         }
-        catch(InvalidRouteGroupException $e)
+        catch(\Exception $e)
         {
-            return Config::get('path.views');
+            return Config::get('path.views')."/Portal";
         }
+
     }
 
     public static function getBase()
